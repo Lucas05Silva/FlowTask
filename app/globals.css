@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   FlowTask — Design Tokens (FlowSys LT)
+   Tailwind v4 CSS-first config. Semantic tokens switch with [data-theme].
+   =========================================================================== */
+
+:root {
+  /* Brand — FlowSys LT (theme-independent) */
+  --brand-purple: #ad88ed;
+  --brand-purple-deep: #312199;
+  --brand-cyan: #a0dde4;
+  --brand-purple-light: #c9b3f5;
+  --brand-purple-dark: #231570;
+  --brand-cyan-light: #d0eff3;
+  --brand-cyan-dark: #5bbcc9;
+
+  /* Category colors (tasks, calendar, finance) */
+  --cat-flowsys: #ad88ed;
+  --cat-pessoal: #5bbcc9;
+  --cat-apartamento: #f59e0b;
+  --cat-casamento: #ec4899;
+  --cat-financeiro: #10b981;
+
+  /* Priority colors */
+  --prio-baixa: #10b981;
+  --prio-media: #f59e0b;
+  --prio-alta: #f97316;
+  --prio-urgente: #ef4444;
+
+  /* Status */
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --info: #5bbcc9;
+}
+
+/* Light theme (default) */
+:root,
+[data-theme="light"] {
+  --bg-primary: #f7f5f0;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #edebe6;
+  --text-primary: #1a1a2e;
+  --text-secondary: #6b6b80;
+  --border: #e0ded8;
+  --fx-shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --fx-shadow-pop: 0 8px 24px rgba(49, 33, 153, 0.12);
+  --ring: rgba(173, 136, 237, 0.45);
+}
+
+/* Dark theme */
+[data-theme="dark"] {
+  --bg-primary: #0d0d1a;
+  --bg-secondary: #1a1a2e;
+  --bg-tertiary: #252540;
+  --text-primary: #f0ede8;
+  --text-secondary: #9b9baf;
+  --border: #2e2e4a;
+  --fx-shadow-soft: 0 0 20px rgba(173, 136, 237, 0.1);
+  --fx-shadow-pop: 0 0 32px rgba(173, 136, 237, 0.18);
+  --ring: rgba(173, 136, 237, 0.6);
+}
+
+/* Map tokens to Tailwind utilities (inline = resolved at runtime → theme swaps) */
+@theme inline {
+  --color-canvas: var(--bg-primary);
+  --color-surface: var(--bg-secondary);
+  --color-panel: var(--bg-tertiary);
+  --color-content: var(--text-primary);
+  --color-muted: var(--text-secondary);
+  --color-line: var(--border);
+
+  --color-brand: var(--brand-purple);
+  --color-brand-deep: var(--brand-purple-deep);
+  --color-brand-light: var(--brand-purple-light);
+  --color-brand-dark: var(--brand-purple-dark);
+  --color-cyan: var(--brand-cyan);
+  --color-cyan-light: var(--brand-cyan-light);
+  --color-cyan-dark: var(--brand-cyan-dark);
+
+  --color-cat-flowsys: var(--cat-flowsys);
+  --color-cat-pessoal: var(--cat-pessoal);
+  --color-cat-apartamento: var(--cat-apartamento);
+  --color-cat-casamento: var(--cat-casamento);
+  --color-cat-financeiro: var(--cat-financeiro);
+
+  --color-prio-baixa: var(--prio-baixa);
+  --color-prio-media: var(--prio-media);
+  --color-prio-alta: var(--prio-alta);
+  --color-prio-urgente: var(--prio-urgente);
+
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-info: var(--info);
+
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-body: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+
+  --radius-input: 8px;
+  --radius-card: 12px;
+  --radius-badge: 20px;
+
+  --shadow-soft: var(--fx-shadow-soft);
+  --shadow-pop: var(--fx-shadow-pop);
+}
+
+/* ===========================================================================
+   Base
+   =========================================================================== */
+* {
+  border-color: var(--border);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-montserrat), ui-sans-serif, system-ui, sans-serif;
+  transition:
+    background-color 200ms ease,
+    color 200ms ease;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 600;
+}
+
+/* Visible focus rings (a11y) */
+:focus-visible {
+  outline: 2px solid var(--brand-purple);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+  border: 2px solid var(--bg-primary);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--brand-purple-light);
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Utilities */
+@utility text-balance {
+  text-wrap: balance;
+}
+
+.bg-aurora {
+  background-image:
+    radial-gradient(60% 50% at 15% 0%, rgba(173, 136, 237, 0.16), transparent 70%),
+    radial-gradient(50% 45% at 95% 10%, rgba(160, 221, 228, 0.14), transparent 70%);
+}
