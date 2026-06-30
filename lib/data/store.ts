@@ -11,7 +11,7 @@ import { seedData } from "./seed";
 
 const KEY = "flowtask:data";
 const VERSION_KEY = "flowtask:version";
-const VERSION = "1";
+const VERSION = "2";
 
 let cache: FlowTaskData | null = null;
 const listeners = new Set<() => void>();

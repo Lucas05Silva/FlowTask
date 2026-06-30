@@ -15,17 +15,17 @@
   --brand-cyan-light: #d0eff3;
   --brand-cyan-dark: #5bbcc9;
 
-  /* Category colors (tasks, calendar, finance) */
+  /* Category colors (tasks, calendar, finance) — Fase 2 spec */
   --cat-flowsys: #ad88ed;
-  --cat-pessoal: #5bbcc9;
-  --cat-apartamento: #f59e0b;
-  --cat-casamento: #ec4899;
-  --cat-financeiro: #10b981;
+  --cat-pessoal: #a0dde4;
+  --cat-apartamento: #10b981;
+  --cat-casamento: #f472b6;
+  --cat-financeiro: #f59e0b;
 
-  /* Priority colors */
-  --prio-baixa: #10b981;
-  --prio-media: #f59e0b;
-  --prio-alta: #f97316;
+  /* Priority colors — Fase 2 spec */
+  --prio-baixa: #a0dde4;
+  --prio-media: #ad88ed;
+  --prio-alta: #f59e0b;
   --prio-urgente: #ef4444;
 
   /* Status */

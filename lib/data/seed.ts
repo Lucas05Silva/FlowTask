@@ -69,46 +69,100 @@ export function seedData(): FlowTaskData {
       },
     ],
     tasks: [
+      // — Lucas —
       {
-        id: "t1", title: "Finalizar LP Incont Care", description: "Revisar copy e responsividade",
-        dueDate: day(0), priority: "alta", category: "flowsys", status: "fazendo", assignee: "lucas",
+        id: "t1", title: "Finalizar LP Incont Care", description: "Última revisão antes de entregar ao cliente.",
+        dueDate: day(3), priority: "alta", category: "flowsys", status: "fazendo", assignee: "lucas",
         subtasks: [
           { id: "s1", title: "Hero section", done: true },
-          { id: "s2", title: "Seção de planos", done: true },
+          { id: "s2", title: "Seção benefícios", done: true },
           { id: "s3", title: "Formulário de contato", done: false },
+          { id: "s4", title: "Responsividade", done: false },
+          { id: "s5", title: "Teste cross-browser", done: false },
         ],
         isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: "g_proj",
         xpReward: 25, order: 0, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
       },
       {
-        id: "t2", title: "Reunião com Rosangela (MKlink)", description: "Alinhar escopo da automação",
+        id: "t2", title: "Estudar Next.js Server Actions", description: "",
+        dueDate: day(5), priority: "media", category: "pessoal", status: "a_fazer", assignee: "lucas",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 15, order: 1, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t3", title: "Pagar conta de luz", description: "",
+        dueDate: day(10), priority: "alta", category: "financeiro", status: "a_fazer", assignee: "lucas",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 25, order: 2, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t4", title: "Pesquisar sofás 3 lugares", description: "Retrátil, até R$ 3.500.",
+        dueDate: day(15), priority: "media", category: "apartamento", status: "a_fazer", assignee: "lucas",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: "g_sofa",
+        xpReward: 15, order: 3, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t5", title: "Ligar para fotógrafo casamento", description: "Pedir orçamento e disponibilidade.",
+        dueDate: day(7), priority: "alta", category: "casamento", status: "a_fazer", assignee: "lucas",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 25, order: 4, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
+      },
+      // — Thaiane —
+      {
+        id: "t6", title: "Criar estratégia tráfego pago cliente X", description: "",
+        dueDate: day(4), priority: "alta", category: "flowsys", status: "fazendo", assignee: "thaiane",
+        subtasks: [
+          { id: "s6", title: "Análise de público", done: true },
+          { id: "s7", title: "Definir criativos", done: false },
+          { id: "s8", title: "Configurar campanhas", done: false },
+          { id: "s9", title: "Orçamento", done: false },
+        ],
+        isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 25, order: 5, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t7", title: "Organizar lista de convidados", description: "",
+        dueDate: day(20), priority: "media", category: "casamento", status: "a_fazer", assignee: "thaiane",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 15, order: 6, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t8", title: "Orçar mesa de jantar 6 lugares", description: "",
+        dueDate: day(25), priority: "baixa", category: "apartamento", status: "a_fazer", assignee: "thaiane",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 10, order: 7, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t9", title: "Conferir fatura do cartão", description: "",
+        dueDate: day(1), priority: "urgente", category: "financeiro", status: "a_fazer", assignee: "thaiane",
+        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
+        xpReward: 50, order: 8, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t10", title: "Postar conteúdo FlowSys Instagram", description: "Post semanal de autoridade.",
+        dueDate: day(2), priority: "media", category: "flowsys", status: "a_fazer", assignee: "thaiane",
+        subtasks: [], isRecurring: true, recurrenceRule: "semanal", parentTaskId: null, goalId: null,
+        xpReward: 15, order: 9, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
+      // — Ambos —
+      {
+        id: "t11", title: "Reunião alinhamento semanal FlowSys", description: "",
         dueDate: day(0), priority: "media", category: "flowsys", status: "a_fazer", assignee: "ambos",
+        subtasks: [], isRecurring: true, recurrenceRule: "semanal", parentTaskId: null, goalId: null,
+        xpReward: 15, order: 10, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
+      },
+      {
+        id: "t12", title: "Visitar apartamento decorado referência", description: "",
+        dueDate: day(12), priority: "baixa", category: "apartamento", status: "a_fazer", assignee: "ambos",
         subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
-        xpReward: 10, order: 1, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+        xpReward: 10, order: 11, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
       },
+      // — Exemplo concluído (demo de stats/streak) —
       {
-        id: "t3", title: "Pesquisar sofá da sala", description: "3 lugares, retrátil",
-        dueDate: day(2), priority: "media", category: "apartamento", status: "a_fazer", assignee: "thaiane",
-        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
-        xpReward: 10, order: 2, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
-      },
-      {
-        id: "t4", title: "Provar trajes do casamento", description: "Ateliê centro",
-        dueDate: day(5), priority: "alta", category: "casamento", status: "a_fazer", assignee: "ambos",
-        subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
-        xpReward: 25, order: 3, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
-      },
-      {
-        id: "t5", title: "Pagar fornecedores do mês", description: "",
-        dueDate: day(1), priority: "urgente", category: "financeiro", status: "a_fazer", assignee: "lucas",
-        subtasks: [], isRecurring: true, recurrenceRule: "mensal", parentTaskId: null, goalId: null,
-        xpReward: 50, order: 4, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null,
-      },
-      {
-        id: "t6", title: "Treino na academia", description: "",
+        id: "t13", title: "Treino na academia", description: "",
         dueDate: day(0), priority: "baixa", category: "pessoal", status: "concluida", assignee: "lucas",
         subtasks: [], isRecurring: true, recurrenceRule: "diaria", parentTaskId: null, goalId: null,
-        xpReward: 10, order: 5, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: at(0, 7),
+        xpReward: 10, order: 12, createdBy: LUCAS_ID, createdAt: nowISO, completedAt: at(0, 7),
       },
     ],
     events: [

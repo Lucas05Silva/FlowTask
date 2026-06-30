@@ -1,4 +1,14 @@
-import type { Priority } from "@/types";
+import type { Priority, RecurrenceRule, FlowTaskData, Achievement } from "@/types";
+
+/** Side effects of an XP-earning action, surfaced to the UI for toasts/modals. */
+export interface CelebrationResult {
+  xpGained: number;
+  leveledUp: boolean;
+  newLevel: number;
+  newTitle: string;
+  achievements: Achievement[];
+  streakCount: number;
+}
 
 /** Level thresholds & titles (prompt §7.2). */
 export interface LevelInfo {
@@ -37,16 +47,65 @@ export const XP = {
   streak30: 200,
 } as const;
 
-/** XP for completing a task, based on its priority. */
+/** XP for completing a task, based on its priority (prompt Fase 2 §2). */
 export function taskXp(priority: Priority): number {
   switch (priority) {
     case "urgente":
-      return XP.taskUrgentOnTime;
+      return 50;
     case "alta":
-      return XP.taskHigh;
+      return 25;
+    case "media":
+      return 15;
+    case "baixa":
     default:
-      return XP.taskSimple;
+      return 10;
   }
+}
+
+/** Next due date (yyyy-mm-dd) for a recurring task after completion. */
+export function nextRecurrence(
+  dateISO: string | null,
+  rule: RecurrenceRule | null,
+): string | null {
+  const base = dateISO ? new Date(dateISO) : new Date();
+  switch (rule) {
+    case "diaria":
+      base.setDate(base.getDate() + 1);
+      break;
+    case "mensal":
+      base.setMonth(base.getMonth() + 1);
+      break;
+    case "semanal":
+    case "personalizada":
+    default:
+      base.setDate(base.getDate() + 7);
+      break;
+  }
+  const tz = base.getTimezoneOffset() * 60000;
+  return new Date(base.getTime() - tz).toISOString().slice(0, 10);
+}
+
+/** Achievement keys (ids) the user qualifies for but hasn't unlocked yet. */
+export function evaluateAchievements(data: FlowTaskData, userId: string): string[] {
+  const have = new Set(
+    data.userAchievements.filter((u) => u.userId === userId).map((u) => u.achievementId),
+  );
+  const user = data.users.find((u) => u.id === userId);
+  if (!user) return [];
+  const completed = data.tasks.filter((t) => t.status === "concluida").length;
+  const toUnlock: string[] = [];
+  const check = (id: string, cond: boolean) => {
+    if (cond && !have.has(id)) toUnlock.push(id);
+  };
+  check("ach_first_step", completed >= 1);
+  check("ach_week", user.streakCount >= 7);
+  check("ach_month", user.streakCount >= 30);
+  // "Casal produtivo" — both users at the same level
+  const [a, b] = data.users;
+  if (a && b) check("ach_couple", a.level === b.level && a.level > 1);
+  // "Dupla dinâmica" — both with active 7+ day streaks
+  if (a && b) check("ach_duo", a.streakCount >= 7 && b.streakCount >= 7);
+  return toUnlock;
 }
 
 /** Resolve level info from a total XP amount. */
