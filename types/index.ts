@@ -301,6 +301,37 @@ export interface AppNotification {
   createdAt: string;
 }
 
+/* --- Task Prompts (Cofre de Prompts, Fase 11) --- */
+
+export interface PromptVariable {
+  key: string; // e.g. "nome_cliente" (without braces)
+  label: string; // display label, e.g. "Nome do Cliente"
+  defaultValue?: string; // optional default
+  currentValue?: string; // filled by the user before copying (not persisted)
+}
+
+export interface PromptUsage {
+  id: ID;
+  usedBy: ID;
+  usedAt: string;
+  variablesUsed: Record<string, string>;
+}
+
+export interface TaskPrompt {
+  id: ID;
+  taskId: ID;
+  title: string;
+  description?: string;
+  category: string;
+  content: string; // prompt text with {variavel} tokens
+  variables: PromptVariable[];
+  usageHistory: PromptUsage[];
+  createdBy: ID;
+  createdAt: string;
+  updatedAt: string;
+  updatedBy?: ID;
+}
+
 /** Top-level shape of the mock store persisted to localStorage. */
 export interface FlowTaskData {
   users: User[];
@@ -317,6 +348,7 @@ export interface FlowTaskData {
   achievements: Achievement[];
   userAchievements: UserAchievement[];
   notifications: AppNotification[];
+  taskPrompts: TaskPrompt[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;

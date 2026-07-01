@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/ui/EmptyState";
 import { TaskStats } from "./TaskStats";
 import { TaskFilters, DEFAULT_FILTERS, type TaskFilterState, type ViewMode } from "./TaskFilters";
 import { TaskList } from "./TaskList";
-import { TaskModal } from "./TaskModal";
+import { TaskModal, type TaskModalTab } from "./TaskModal";
 
 export function TaskPage() {
   const { tasks, createTask, updateTask, deleteTask, completeTask } = useTasks();
@@ -21,6 +21,7 @@ export function TaskPage() {
   const [view, setView] = useState<ViewMode>("status");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
+  const [modalTab, setModalTab] = useState<TaskModalTab>("subtarefas");
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -42,10 +43,12 @@ export function TaskPage() {
 
   function openNew() {
     setEditing(null);
+    setModalTab("subtarefas");
     setModalOpen(true);
   }
-  function openEdit(task: Task) {
+  function openEdit(task: Task, tab: TaskModalTab = "subtarefas") {
     setEditing(task);
+    setModalTab(tab);
     setModalOpen(true);
   }
 
@@ -110,6 +113,7 @@ export function TaskPage() {
       <TaskModal
         open={modalOpen}
         task={editing}
+        initialTab={modalTab}
         onClose={() => setModalOpen(false)}
         onCreate={createTask}
         onUpdate={handleUpdate}

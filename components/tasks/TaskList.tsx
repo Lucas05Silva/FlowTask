@@ -6,6 +6,7 @@ import { ChevronDown } from "lucide-react";
 import type { Category, Task, TaskStatus } from "@/types";
 import { CATEGORY_META, TASK_STATUS_META } from "@/lib/constants";
 import { TaskCard } from "./TaskCard";
+import type { TaskModalTab } from "./TaskModal";
 import type { ViewMode } from "./TaskFilters";
 import { cn } from "@/lib/utils";
 
@@ -20,7 +21,7 @@ interface TaskListProps {
   tasks: Task[];
   view: ViewMode;
   onComplete: (task: Task) => void;
-  onOpen: (task: Task) => void;
+  onOpen: (task: Task, tab?: TaskModalTab) => void;
 }
 
 const STATUS_ORDER: TaskStatus[] = ["a_fazer", "fazendo", "concluida"];

@@ -1,18 +1,19 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Repeat, CalendarDays, ListTree } from "lucide-react";
+import { Repeat, CalendarDays, ListTree, Braces } from "lucide-react";
 import type { Task } from "@/types";
 import { useData } from "@/hooks/useData";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { CATEGORY_META, PRIORITY_META } from "@/lib/constants";
 import { countdownLabel, daysUntil, cn } from "@/lib/utils";
+import type { TaskModalTab } from "./TaskModal";
 
 interface TaskCardProps {
   task: Task;
   onComplete: (task: Task) => void;
-  onOpen: (task: Task) => void;
+  onOpen: (task: Task, tab?: TaskModalTab) => void;
 }
 
 export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
@@ -27,6 +28,7 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
       : data.users.filter((u) => u.id === task.assignee);
 
   const doneSubs = task.subtasks.filter((s) => s.done).length;
+  const promptCount = (data.taskPrompts ?? []).filter((p) => p.taskId === task.id).length;
   const overdue = task.dueDate && !done && daysUntil(task.dueDate) < 0;
   const dueSoon = task.dueDate && !done && daysUntil(task.dueDate) <= 7;
 
@@ -113,6 +115,21 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
                 <ListTree className="size-3.5" />
                 {doneSubs}/{task.subtasks.length}
               </span>
+            )}
+
+            {promptCount > 0 && (
+              <button
+                type="button"
+                aria-label={`${promptCount} prompts`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onOpen(task, "prompts");
+                }}
+                className="inline-flex items-center gap-1 rounded-badge px-1 text-xs text-muted transition-colors hover:text-brand"
+              >
+                <Braces className="size-3.5" />
+                {promptCount}
+              </button>
             )}
 
             <span className="ml-auto flex -space-x-1.5">

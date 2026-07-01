@@ -154,6 +154,12 @@ export function seedData(): FlowTaskData {
         subtasks: [], isRecurring: true, recurrenceRule: "semanal", parentTaskId: null, goalId: null,
         xpReward: 15, order: 9, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
       },
+      {
+        id: "t14", title: "Criar conteúdo mensal Cintia", description: "Pacote de conteúdo do mês para a cliente Cintia (posts, reels, stories e relatório).",
+        dueDate: day(6), priority: "alta", category: "flowsys", status: "fazendo", assignee: "thaiane",
+        subtasks: [], isRecurring: true, recurrenceRule: "mensal", parentTaskId: null, goalId: null,
+        xpReward: 25, order: 13, createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null,
+      },
       // — Ambos —
       {
         id: "t11", title: "Reunião alinhamento semanal FlowSys", description: "",
@@ -422,6 +428,69 @@ export function seedData(): FlowTaskData {
       { id: "n1", userId: LUCAS_ID, type: "prazo", title: "Entrega hoje", message: "LP Incont Care vence hoje", isRead: false, createdAt: at(0, 8) },
       { id: "n2", userId: LUCAS_ID, type: "divida", title: "Dívida vencendo", message: "Cartão de crédito vence in 5 dias", isRead: false, createdAt: at(0, 8) },
       { id: "n3", userId: THAIANE_ID, type: "conquista", title: "Conquista!", message: "Você desbloqueou Primeiro passo", isRead: true, createdAt: at(-18, 9) },
-    ]
+    ],
+    taskPrompts: [
+      {
+        id: "pr1", taskId: "t14", title: "Post Feed Instagram", category: "Instagram",
+        description: "Prompt para criar posts do feed mensal",
+        content:
+          "Crie 4 posts para o feed do Instagram de {nome_cliente}, uma {profissao} especializada em {especialidade}.\n\nMês de referência: {mes}\nTom de voz: {tom_de_voz}\n\nCada post deve ter:\n- Legenda envolvente com até 150 palavras\n- Chamada para ação ao final\n- 5 hashtags relevantes\n- Sugestão de imagem/visual\n\nOs temas dos posts devem girar em torno de: {temas}",
+        variables: [
+          { key: "nome_cliente", label: "Nome do Cliente", defaultValue: "Cintia" },
+          { key: "profissao", label: "Profissão" },
+          { key: "especialidade", label: "Especialidade" },
+          { key: "mes", label: "Mês" },
+          { key: "tom_de_voz", label: "Tom de Voz" },
+          { key: "temas", label: "Temas" },
+        ],
+        usageHistory: [
+          { id: "pu1", usedBy: THAIANE_ID, usedAt: at(-4, 10), variablesUsed: { nome_cliente: "Cintia", profissao: "nutricionista", especialidade: "emagrecimento", mes: "Junho", tom_de_voz: "leve e acolhedor", temas: "hábitos saudáveis" } },
+        ],
+        createdBy: THAIANE_ID, createdAt: at(-30, 9), updatedAt: at(-4, 10), updatedBy: THAIANE_ID,
+      },
+      {
+        id: "pr2", taskId: "t14", title: "Legenda Reels", category: "Instagram",
+        description: "Prompt para legendas de Reels",
+        content:
+          "Crie uma legenda para um Reels do perfil de {nome_cliente}.\n\nTema do vídeo: {tema_video}\nDuração: {duracao} segundos\nMês: {mes}\n\nA legenda deve:\n- Ter no máximo 3 linhas visíveis antes do \"ver mais\"\n- Primeira linha ser um gancho forte\n- Incluir CTA claro\n- 3 hashtags no final",
+        variables: [
+          { key: "nome_cliente", label: "Nome do Cliente", defaultValue: "Cintia" },
+          { key: "tema_video", label: "Tema do Vídeo" },
+          { key: "duracao", label: "Duração" },
+          { key: "mes", label: "Mês" },
+        ],
+        usageHistory: [],
+        createdBy: THAIANE_ID, createdAt: at(-30, 9), updatedAt: at(-30, 9),
+      },
+      {
+        id: "pr3", taskId: "t14", title: "Stories Sequência", category: "Instagram",
+        description: "Sequência de 5 stories para engajamento",
+        content:
+          "Crie uma sequência de 5 stories para {nome_cliente} sobre o tema: {tema}.\n\nMês: {mes}\nObjetivo: {objetivo}\n\nPara cada story, informe:\n- Texto principal (max 2 linhas)\n- Elemento interativo sugerido (enquete, caixa de pergunta, quiz)\n- Cor/estilo sugerido",
+        variables: [
+          { key: "nome_cliente", label: "Nome do Cliente", defaultValue: "Cintia" },
+          { key: "tema", label: "Tema" },
+          { key: "mes", label: "Mês" },
+          { key: "objetivo", label: "Objetivo" },
+        ],
+        usageHistory: [],
+        createdBy: THAIANE_ID, createdAt: at(-30, 9), updatedAt: at(-30, 9),
+      },
+      {
+        id: "pr4", taskId: "t14", title: "Relatório Mensal Cliente", category: "Geral",
+        description: "Estrutura para relatório de resultados",
+        content:
+          "Crie um relatório mensal de resultados para o cliente {nome_cliente}.\n\nMês: {mes}\nPlataformas: {plataformas}\nPrincipais métricas alcançadas: {metricas}\n\nO relatório deve incluir:\n- Resumo executivo (3 parágrafos)\n- Análise de desempenho por plataforma\n- Principais conquistas do mês\n- Pontos de melhoria\n- Próximos passos para {proximo_mes}",
+        variables: [
+          { key: "nome_cliente", label: "Nome do Cliente", defaultValue: "Cintia" },
+          { key: "mes", label: "Mês" },
+          { key: "plataformas", label: "Plataformas" },
+          { key: "metricas", label: "Métricas" },
+          { key: "proximo_mes", label: "Próximo Mês" },
+        ],
+        usageHistory: [],
+        createdBy: THAIANE_ID, createdAt: at(-30, 9), updatedAt: at(-30, 9),
+      },
+    ],
   };
 }

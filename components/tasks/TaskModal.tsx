@@ -11,10 +11,13 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Textarea, Select } from "@/components/ui/Input";
 import { SubtaskList } from "./SubtaskList";
+import { TaskPromptsSection } from "./prompts/TaskPromptsSection";
 import { CATEGORY_META, PRIORITY_META, ASSIGNEE_META } from "@/lib/constants";
 import { taskXp, type CelebrationResult } from "@/lib/gamification";
 import type { TaskFormData } from "@/hooks/useTasks";
 import { cn } from "@/lib/utils";
+
+export type TaskModalTab = "subtarefas" | "prompts";
 
 interface TaskModalProps {
   open: boolean;
@@ -24,6 +27,7 @@ interface TaskModalProps {
   onUpdate: (id: string, form: TaskFormData) => void;
   onComplete: (id: string) => CelebrationResult | null;
   onDelete: (id: string) => void;
+  initialTab?: TaskModalTab;
 }
 
 function emptyForm(): TaskFormData {
@@ -58,11 +62,12 @@ function fromTask(t: Task): TaskFormData {
 
 const ASSIGNEES: Assignee[] = ["lucas", "thaiane", "ambos"];
 
-export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete, onDelete }: TaskModalProps) {
+export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete, onDelete, initialTab }: TaskModalProps) {
   const data = useData();
   const [form, setForm] = useState<TaskFormData>(emptyForm());
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [tab, setTab] = useState<TaskModalTab>("subtarefas");
   const isEdit = task !== null;
 
   useEffect(() => {
@@ -70,8 +75,9 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
       setForm(task ? fromTask(task) : emptyForm());
       setError(null);
       setConfirmDelete(false);
+      setTab(initialTab ?? "subtarefas");
     }
-  }, [open, task]);
+  }, [open, task, initialTab]);
 
   function patch(p: Partial<TaskFormData>) {
     setForm((f) => ({ ...f, ...p }));
@@ -224,8 +230,38 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
         </div>
 
         <div>
-          <Label>Subtarefas</Label>
-          <SubtaskList subtasks={form.subtasks} onChange={(subtasks) => patch({ subtasks })} />
+          <div className="mb-3 flex gap-1 rounded-input bg-panel p-1">
+            <button
+              type="button"
+              onClick={() => setTab("subtarefas")}
+              className={cn(
+                "flex-1 rounded-[6px] py-1.5 text-sm font-medium transition-colors",
+                tab === "subtarefas" ? "bg-surface text-content shadow-soft" : "text-muted hover:text-content",
+              )}
+            >
+              Subtarefas
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab("prompts")}
+              className={cn(
+                "flex-1 rounded-[6px] py-1.5 text-sm font-medium transition-colors",
+                tab === "prompts" ? "bg-surface text-content shadow-soft" : "text-muted hover:text-content",
+              )}
+            >
+              Prompts
+            </button>
+          </div>
+
+          {tab === "subtarefas" ? (
+            <SubtaskList subtasks={form.subtasks} onChange={(subtasks) => patch({ subtasks })} />
+          ) : isEdit && task ? (
+            <TaskPromptsSection taskId={task.id} />
+          ) : (
+            <p className="rounded-input border border-dashed border-line px-4 py-6 text-center text-sm text-muted">
+              Salve a tarefa primeiro para adicionar prompts. 💾
+            </p>
+          )}
         </div>
 
         {isEdit && task && (
