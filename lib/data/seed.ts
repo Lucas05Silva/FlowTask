@@ -31,8 +31,8 @@ export const THAIANE_ID = "thaiane";
 /** Catalogue of all unlockable achievements (prompt §7.4). */
 const ACHIEVEMENTS: FlowTaskData["achievements"] = [
   { id: "ach_first_step", key: "primeiro_passo", title: "Primeiro passo", description: "Concluiu a primeira tarefa", icon: "Footprints", xpReward: 20 },
-  { id: "ach_week", key: "semana_produtiva", title: "Semana produtiva", description: "7 dias de streak", icon: "CalendarCheck", xpReward: 50 },
-  { id: "ach_month", key: "mes_de_fogo", title: "Mês de fogo", description: "30 dias de streak", icon: "Flame", xpReward: 200 },
+  { id: "ach_week", key: "semana_produtiva", title: "Semana produtiva", description: "7 dias de streak", icon: "Flame", xpReward: 50 },
+  { id: "ach_month", key: "mes_de_fogo", title: "Mês de fogo", description: "30 dias de streak", icon: "Zap", xpReward: 200 },
   { id: "ach_client", key: "cliente_feliz", title: "Cliente feliz", description: "Entregou o primeiro projeto FlowSys", icon: "Smile", xpReward: 100 },
   { id: "ach_machine", key: "maquina_entregas", title: "Máquina de entregas", description: "Entregou 10 projetos", icon: "Rocket", xpReward: 300 },
   { id: "ach_debt_zero", key: "divida_zero", title: "Dívida zero", description: "Quitou uma dívida", icon: "BadgeCheck", xpReward: 100 },
@@ -58,6 +58,7 @@ export function seedData(): FlowTaskData {
         xp: 1180,
         level: 5,
         streakCount: 9,
+        streakRecord: 12,
         streakLastDate: day(0),
         themePreference: "system",
         createdAt: nowISO,
@@ -71,6 +72,7 @@ export function seedData(): FlowTaskData {
         xp: 940,
         level: 4,
         streakCount: 6,
+        streakRecord: 8,
         streakLastDate: day(0),
         themePreference: "system",
         createdAt: nowISO,

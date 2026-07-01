@@ -43,6 +43,7 @@ export interface User {
   xp: number;
   level: number;
   streakCount: number;
+  streakRecord: number;
   streakLastDate: string | null;
   themePreference: ThemePreference;
   createdAt: string;

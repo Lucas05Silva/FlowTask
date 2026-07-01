@@ -162,6 +162,7 @@ export function useTasks() {
 
         if (me.streakLastDate !== today) {
           me.streakCount = me.streakLastDate === yesterdayISO() ? me.streakCount + 1 : 1;
+          me.streakRecord = Math.max(me.streakRecord || 0, me.streakCount);
           me.streakLastDate = today;
           if (me.streakCount === 7) bonus += XP.streak7;
           if (me.streakCount === 30) bonus += XP.streak30;
