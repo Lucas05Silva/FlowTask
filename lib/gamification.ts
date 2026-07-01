@@ -104,6 +104,8 @@ export function evaluateAchievements(data: FlowTaskData, userId: string): string
   check("ach_month", user.streakCount >= 30);
   check("ach_client", completedProjects >= 1);
   check("ach_machine", completedProjects >= 10);
+  check("ach_nest", data.apartmentItems.length > 0 && data.apartmentItems.every((i) => i.status === "comprado" || i.status === "entregue"));
+  check("ach_iaccept", data.weddingTasks.length > 0 && data.weddingTasks.every((t) => t.status === "concluida"));
   // "Casal produtivo" — both users at the same level
   const [a, b] = data.users;
   if (a && b) check("ach_couple", a.level === b.level && a.level > 1);

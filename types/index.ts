@@ -236,6 +236,7 @@ export interface WeddingTask {
   deadline: string | null;
   assignee: Assignee;
   status: TaskStatus;
+  category: string;
   createdAt: string;
   completedAt: string | null;
 }
@@ -312,4 +313,6 @@ export interface FlowTaskData {
   userAchievements: UserAchievement[];
   notifications: AppNotification[];
   weddingDate: string | null;
+  weddingVenueName?: string | null;
+  weddingVenueAddress?: string | null;
 }

@@ -45,7 +45,9 @@ const ACHIEVEMENTS: FlowTaskData["achievements"] = [
 
 export function seedData(): FlowTaskData {
   return {
-    weddingDate: day(280),
+    weddingDate: null,
+    weddingVenueName: null,
+    weddingVenueAddress: null,
     users: [
       {
         id: LUCAS_ID,
@@ -375,21 +377,37 @@ export function seedData(): FlowTaskData {
       { id: "ai_e4", room: "escritório", name: "Luminária de mesa", estimatedCost: 150, actualCost: null, priority: "desejavel", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO }
     ],
     weddingTasks: [
-      { id: "wt1", title: "Escolher local da cerimônia", description: "", deadline: day(30), assignee: "ambos", status: "fazendo", createdAt: nowISO, completedAt: null },
-      { id: "wt2", title: "Contratar fotógrafo", description: "", deadline: day(60), assignee: "lucas", status: "a_fazer", createdAt: nowISO, completedAt: null },
-      { id: "wt3", title: "Definir lista de convidados", description: "", deadline: day(20), assignee: "thaiane", status: "a_fazer", createdAt: nowISO, completedAt: null },
-      { id: "wt4", title: "Reservar data no cartório", description: "", deadline: day(15), assignee: "ambos", status: "concluida", createdAt: nowISO, completedAt: at(-3, 11) },
+      { id: "wt1", title: "Definir data do casamento", description: "", deadline: null, assignee: "ambos", status: "a_fazer", category: "geral", createdAt: nowISO, completedAt: null },
+      { id: "wt2", title: "Pesquisar locais para cerimônia", description: "", deadline: "2026-08-31", assignee: "thaiane", status: "a_fazer", category: "cerimonia", createdAt: nowISO, completedAt: null },
+      { id: "wt3", title: "Pesquisar locais para recepção", description: "", deadline: "2026-08-31", assignee: "thaiane", status: "a_fazer", category: "recepcao", createdAt: nowISO, completedAt: null },
+      { id: "wt4", title: "Definir lista de convidados", description: "", deadline: "2026-07-31", assignee: "thaiane", status: "fazendo", category: "geral", createdAt: nowISO, completedAt: null },
+      { id: "wt5", title: "Pesquisar fotógrafo", description: "", deadline: "2026-09-30", assignee: "lucas", status: "a_fazer", category: "geral", createdAt: nowISO, completedAt: null },
+      { id: "wt6", title: "Pesquisar buffet", description: "", deadline: "2026-09-30", assignee: "thaiane", status: "a_fazer", category: "recepcao", createdAt: nowISO, completedAt: null },
+      { id: "wt7", title: "Escolher modelo do vestido", description: "", deadline: "2026-10-31", assignee: "thaiane", status: "a_fazer", category: "visual", createdAt: nowISO, completedAt: null },
+      { id: "wt8", title: "Escolher terno", description: "", deadline: "2026-10-31", assignee: "lucas", status: "a_fazer", category: "visual", createdAt: nowISO, completedAt: null },
+      { id: "wt9", title: "Pesquisar convites", description: "", deadline: null, assignee: "thaiane", status: "a_fazer", category: "geral", createdAt: nowISO, completedAt: null },
+      { id: "wt10", title: "Providenciar documentação civil", description: "", deadline: null, assignee: "lucas", status: "a_fazer", category: "documentacao", createdAt: nowISO, completedAt: null },
+      { id: "wt11", title: "Escolher alianças", description: "", deadline: "2026-10-31", assignee: "ambos", status: "a_fazer", category: "geral", createdAt: nowISO, completedAt: null },
+      { id: "wt12", title: "Definir playlist/DJ", description: "", deadline: null, assignee: "lucas", status: "a_fazer", category: "recepcao", createdAt: nowISO, completedAt: null },
+      { id: "wt13", title: "Pesquisar decoração", description: "", deadline: null, assignee: "thaiane", status: "a_fazer", category: "recepcao", createdAt: nowISO, completedAt: null },
+      { id: "wt14", title: "Organizar lua de mel", description: "", deadline: null, assignee: "ambos", status: "a_fazer", category: "geral", createdAt: nowISO, completedAt: null }
     ],
     weddingBudget: [
-      { id: "wb1", category: "Local", estimatedCost: 8000, actualCost: 0, notes: "" },
-      { id: "wb2", category: "Buffet", estimatedCost: 15000, actualCost: 0, notes: "" },
-      { id: "wb3", category: "Fotografia/Vídeo", estimatedCost: 5000, actualCost: 0, notes: "" },
-      { id: "wb4", category: "Decoração", estimatedCost: 4000, actualCost: 0, notes: "" },
-      { id: "wb5", category: "Vestuário", estimatedCost: 6000, actualCost: 1500, notes: "Sinal do ateliê" },
+      { id: "wb1", category: "local", estimatedCost: 5000, actualCost: 0, notes: "" },
+      { id: "wb2", category: "buffet", estimatedCost: 8000, actualCost: 0, notes: "" },
+      { id: "wb3", category: "decoracao", estimatedCost: 3000, actualCost: 0, notes: "" },
+      { id: "wb4", category: "foto_video", estimatedCost: 4000, actualCost: 0, notes: "" },
+      { id: "wb5", category: "vestuario", estimatedCost: 4500, actualCost: 0, notes: "" },
+      { id: "wb6", category: "aliancas", estimatedCost: 2000, actualCost: 0, notes: "" },
+      { id: "wb7", category: "convites", estimatedCost: 800, actualCost: 0, notes: "" },
+      { id: "wb8", category: "musica", estimatedCost: 2500, actualCost: 0, notes: "" },
+      { id: "wb9", category: "lua_de_mel", estimatedCost: 6000, actualCost: 0, notes: "" },
+      { id: "wb10", category: "outros", estimatedCost: 2000, actualCost: 0, notes: "" }
     ],
     weddingVendors: [
-      { id: "wv1", name: "Studio Luz & Arte", service: "Fotografia", contactPhone: "(11) 90000-0000", contactEmail: null, quotedValue: 5000, status: "orcado", notes: "" },
-      { id: "wv2", name: "Espaço Villa", service: "Local + Buffet", contactPhone: "(11) 91111-1111", contactEmail: "contato@villa.com", quotedValue: 22000, status: "pesquisando", notes: "Degustação marcada" },
+      { id: "wv1", name: "Studio Lens Fotografia", service: "Fotografia", contactPhone: "(41) 99999-1234", contactEmail: "studio@lens.com", quotedValue: 3800, status: "pesquisando", notes: "" },
+      { id: "wv2", name: "Buffet Sabor & Arte", service: "Buffet", contactPhone: "(41) 98888-5678", contactEmail: "contato@saborarte.com", quotedValue: 7500, status: "pesquisando", notes: "" },
+      { id: "wv3", name: "DJ Rafael", service: "Música/DJ", contactPhone: "(41) 97777-9012", contactEmail: "djrafael@gmail.com", quotedValue: 2200, status: "pesquisando", notes: "" }
     ],
     achievements: ACHIEVEMENTS,
     userAchievements: [
@@ -400,8 +418,8 @@ export function seedData(): FlowTaskData {
     ],
     notifications: [
       { id: "n1", userId: LUCAS_ID, type: "prazo", title: "Entrega hoje", message: "LP Incont Care vence hoje", isRead: false, createdAt: at(0, 8) },
-      { id: "n2", userId: LUCAS_ID, type: "divida", title: "Dívida vencendo", message: "Cartão de crédito vence em 5 dias", isRead: false, createdAt: at(0, 8) },
+      { id: "n2", userId: LUCAS_ID, type: "divida", title: "Dívida vencendo", message: "Cartão de crédito vence in 5 dias", isRead: false, createdAt: at(0, 8) },
       { id: "n3", userId: THAIANE_ID, type: "conquista", title: "Conquista!", message: "Você desbloqueou Primeiro passo", isRead: true, createdAt: at(-18, 9) },
-    ],
+    ]
   };
 }

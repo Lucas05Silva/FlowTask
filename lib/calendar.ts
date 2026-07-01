@@ -1,4 +1,4 @@
-import type { CalendarEvent, Debt, FlowTaskData, Project, Task, ApartmentItem } from "@/types";
+import type { CalendarEvent, Debt, FlowTaskData, Project, Task, ApartmentItem, WeddingTask } from "@/types";
 import { CATEGORY_META } from "@/lib/constants";
 
 /** Unified item consumed by the calendar views (aggregates every source). */
@@ -161,6 +161,22 @@ function apartmentItemToItem(item: ApartmentItem): CalendarItem | null {
   };
 }
 
+function weddingTaskToItem(task: WeddingTask): CalendarItem | null {
+  if (!task.deadline || task.status === "concluida") return null;
+  return {
+    id: `wedding-task-${task.id}`,
+    title: `Casamento: ${task.title}`,
+    date: task.deadline,
+    type: "wedding",
+    category: "casamento",
+    color: "var(--cat-casamento)",
+    icon: "Heart",
+    isAllDay: true,
+    originalId: task.id,
+    originalModule: "casamento",
+  };
+}
+
 /**
  * Aggregate all sources into a flat CalendarItem list.
  * Wires Tasks + own Events + Project deadlines + Active debts.
@@ -181,6 +197,24 @@ export function aggregateItems(data: FlowTaskData): CalendarItem[] {
   for (const item of data.apartmentItems || []) {
     const calItem = apartmentItemToItem(item);
     if (calItem) items.push(calItem);
+  }
+  for (const t of data.weddingTasks || []) {
+    const calItem = weddingTaskToItem(t);
+    if (calItem) items.push(calItem);
+  }
+  if (data.weddingDate) {
+    items.push({
+      id: "wedding-day",
+      title: "O Grande Dia! 💒",
+      date: data.weddingDate,
+      type: "wedding",
+      category: "casamento",
+      color: "var(--cat-casamento)",
+      icon: "PartyPopper",
+      isAllDay: true,
+      originalId: "wedding-day",
+      originalModule: "casamento",
+    });
   }
   return items;
 }

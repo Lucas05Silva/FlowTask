@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type {
   FinanceEntry,
   Debt,
@@ -54,6 +54,30 @@ export function useFinance() {
   const data = useData();
   const { user } = useAuth();
   const userId = user?.id ?? null;
+
+  // Virtual wedding expense entries mapping actual costs
+  const allFinances = useMemo(() => {
+    const list = [...data.finances];
+    const budgetList = data.weddingBudget || [];
+    budgetList.forEach((b) => {
+      if (b.actualCost > 0) {
+        list.push({
+          id: `virtual-wedding-${b.id}`,
+          type: "expense",
+          amount: b.actualCost,
+          description: `Casamento: ${b.category}`,
+          date: todayISO(),
+          category: "casamento",
+          tags: ["casamento"],
+          isRecurring: false,
+          recurrenceRule: null,
+          createdBy: userId || "lucas",
+          createdAt: new Date().toISOString(),
+        });
+      }
+    });
+    return list;
+  }, [data.finances, data.weddingBudget, userId]);
 
   // Helper to apply XP reward and check achievements manually
   const rewardUser = useCallback(
@@ -414,9 +438,9 @@ export function useFinance() {
     (month: number, year: number): FinanceEntry[] => {
       const pad = (n: number) => String(n).padStart(2, "0");
       const key = `${year}-${pad(month)}`;
-      return data.finances.filter((f) => f.date.slice(0, 7) === key);
+      return allFinances.filter((f) => f.date.slice(0, 7) === key);
     },
-    [data.finances]
+    [allFinances]
   );
 
   const getMonthlyTotals = useCallback(
@@ -457,7 +481,7 @@ export function useFinance() {
 
     const index = new Map(buckets.map((b) => [b.month, b]));
 
-    for (const e of data.finances) {
+    for (const e of allFinances) {
       const k = e.date.slice(0, 7);
       const b = index.get(k);
       if (!b) continue;
@@ -466,7 +490,7 @@ export function useFinance() {
     }
 
     return buckets;
-  }, [data.finances]);
+  }, [allFinances]);
 
   const getExpensesByCategory = useCallback(
     (month: number, year: number) => {
@@ -606,7 +630,7 @@ export function useFinance() {
   }, [getMonthlyTotals, getExpensesByCategory, data.goals, data.debts]);
 
   return {
-    finances: data.finances,
+    finances: allFinances,
     debts: data.debts,
     goals: data.goals.filter((g) => g.type === "financeira"), // only financial goals in hook context
     createEntry,

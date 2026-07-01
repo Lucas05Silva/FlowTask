@@ -118,6 +118,14 @@ export default function DashboardPage() {
   const apCompleted = apartmentItems.filter((i) => i.status === "comprado" || i.status === "entregue").length;
   const apPercentage = apTotal > 0 ? Math.round((apCompleted / apTotal) * 100) : 0;
 
+  const weddingDate = data.weddingDate || null;
+  const weddingDays = weddingDate ? daysUntil(weddingDate) : null;
+
+  const weddingTasks = data.weddingTasks || [];
+  const wedTotal = weddingTasks.length;
+  const wedCompleted = weddingTasks.filter((t) => t.status === "concluida").length;
+  const wedPercentage = wedTotal > 0 ? Math.round((wedCompleted / wedTotal) * 100) : 0;
+
   if (!user) return null;
   const hour = new Date().getHours();
 
@@ -132,6 +140,28 @@ export default function DashboardPage() {
           {new Date().toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}
         </p>
       </motion.div>
+
+      {/* Wedding Countdown Banner */}
+      {weddingDays !== null && (
+        <motion.div
+          variants={item}
+          className="rounded-card border border-pink-100/20 bg-gradient-to-r from-pink-500/10 via-pink-400/5 to-purple-500/10 p-4 text-xs sm:text-sm font-bold text-pink-600 dark:text-pink-400 flex items-center justify-between shadow-soft"
+        >
+          <span className="flex items-center gap-2">
+            <span className="animate-pulse">💍</span>{" "}
+            {weddingDays === 0
+              ? "É HOJE! O Grande Dia chegou! 💒💕"
+              : weddingDays === 1
+              ? "É AMANHÃ! O grande dia está chegando! 💒💍"
+              : weddingDays < 0
+              ? `Casados há ${Math.abs(weddingDays)} dias! 💕`
+              : `Faltam ${weddingDays} dias para o grande dia de Lucas & Thaiane! 💒✨`}
+          </span>
+          <Link href="/casamento" className="text-xs hover:underline text-pink-500 shrink-0 font-extrabold">
+            Acompanhar Painel →
+          </Link>
+        </motion.div>
+      )}
 
       {/* Summary cards */}
       <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -265,6 +295,20 @@ export default function DashboardPage() {
                 <span className="font-bold text-brand">{apPercentage}% comprado</span>
               </div>
               <ProgressBar value={apPercentage} />
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Casamento 💍</CardTitle>
+              <Link href="/casamento" className="text-sm font-medium text-pink-500 hover:underline">Ver</Link>
+            </CardHeader>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-muted">{wedCompleted} de {wedTotal} tarefas</span>
+                <span className="font-bold text-pink-500">{wedPercentage}% concluído</span>
+              </div>
+              <ProgressBar value={wedPercentage} />
             </div>
           </Card>
         </motion.div>
