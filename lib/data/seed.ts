@@ -256,26 +256,123 @@ export function seedData(): FlowTaskData {
       },
     ],
     finances: [
-      { id: "f1", type: "income", amount: 4500, description: "Projeto ServTech", date: day(-8), category: "FlowSys", tags: ["projeto"], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "f2", type: "income", amount: 2800, description: "50% LP Incont Care", date: day(-12), category: "FlowSys", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "f3", type: "expense", amount: 1800, description: "Aluguel", date: day(-5), category: "Moradia", tags: ["fixo"], isRecurring: true, recurrenceRule: "mensal", createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "f4", type: "expense", amount: 650, description: "Mercado", date: day(-3), category: "Alimentação", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
-      { id: "f5", type: "expense", amount: 1200, description: "Entrada da geladeira", date: day(-2), category: "Apê", tags: ["apartamento"], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f1", type: "income", amount: 2000, description: "Projeto LP Fut Palhano", date: day(-17), category: "flowsys", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f2", type: "income", amount: 1200, description: "Mensalidade tráfego Studio Pilates", date: day(0), category: "flowsys", tags: [], isRecurring: true, recurrenceRule: "mensal", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f3", type: "income", amount: 600, description: "Freelance design social media", date: day(-11), category: "freelance", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f4", type: "income", amount: 800, description: "Projeto MKlink Rosangela", date: day(-3), category: "flowsys", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f5", type: "expense", amount: 1500, description: "Aluguel", date: day(4), category: "moradia", tags: ["fixo"], isRecurring: true, recurrenceRule: "mensal", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f6", type: "expense", amount: 450, description: "Mercado semanal", date: day(-9), category: "alimentacao", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f7", type: "expense", amount: 250, description: "Gasolina", date: day(-13), category: "transporte", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f8", type: "expense", amount: 70, description: "Netflix + Spotify", date: day(-16), category: "lazer", tags: ["fixo"], isRecurring: true, recurrenceRule: "mensal", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f9", type: "expense", amount: 30, description: "Curso Next.js Udemy", date: day(-21), category: "educacao", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f10", type: "expense", amount: 180, description: "Jantar aniversário", date: day(-6), category: "lazer", tags: [], isRecurring: false, recurrenceRule: null, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f11", type: "expense", amount: 95, description: "Farmácia", date: day(-19), category: "saude", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f12", type: "expense", amount: 45, description: "Domínio + hosting FlowSys", date: day(-30), category: "flowsys_custo", tags: ["fixo"], isRecurring: true, recurrenceRule: "mensal", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "f13", type: "expense", amount: 85, description: "Uber", date: day(-11), category: "transporte", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "f14", type: "expense", amount: 120, description: "iFood", date: day(-8), category: "alimentacao", tags: [], isRecurring: false, recurrenceRule: null, createdBy: THAIANE_ID, createdAt: nowISO },
     ],
     debts: [
-      { id: "d1", name: "Cartão de crédito", totalAmount: 3000, paidAmount: 1800, installmentsRemaining: 4, dueDay: 10, interestRate: 0, status: "ativa", createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "d2", name: "Financiamento móveis", totalAmount: 6000, paidAmount: 1500, installmentsRemaining: 9, dueDay: 20, interestRate: 1.99, status: "ativa", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "d1", name: "Cartão Nubank", totalAmount: 3200, paidAmount: 1600, installmentsTotal: 8, installmentsPaid: 4, dueDay: 10, interestRate: 0, status: "ativa", notes: "", createdBy: LUCAS_ID, createdAt: nowISO, paidAt: null },
+      { id: "d2", name: "Empréstimo pessoal", totalAmount: 5000, paidAmount: 2000, installmentsTotal: 10, installmentsPaid: 4, dueDay: 15, interestRate: 1.5, status: "ativa", notes: "", createdBy: THAIANE_ID, createdAt: nowISO, paidAt: null },
+      { id: "d3", name: "Financiamento notebook", totalAmount: 4800, paidAmount: 3200, installmentsTotal: 12, installmentsPaid: 8, dueDay: 20, interestRate: 0, status: "ativa", notes: "", createdBy: LUCAS_ID, createdAt: nowISO, paidAt: null },
     ],
     goals: [
-      { id: "g_proj", title: "Fechar 5 projetos no mês", description: "Meta de faturamento FlowSys", type: "projeto", targetAmount: 5, currentAmount: 3, deadline: day(20), category: null, linkedModule: "projetos", xpReward: 200, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "g_sofa", title: "Sofá novo", description: "Reserva para o sofá da sala", type: "financeira", targetAmount: 3500, currentAmount: 2100, deadline: day(45), category: "apartamento", linkedModule: "financeiro", xpReward: 150, status: "em_andamento", createdBy: THAIANE_ID, createdAt: nowISO },
-      { id: "g_buffet", title: "Buffet do casamento", description: "Guardar para o buffet", type: "casamento", targetAmount: 15000, currentAmount: 6000, deadline: day(180), category: "casamento", linkedModule: "casamento", xpReward: 150, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "g_proj", title: "Fechar 5 projetos no mês", description: "Meta de faturamento FlowSys", type: "projeto", targetAmount: 5, currentAmount: 3, deadline: day(20), category: null, linkedModule: "projetos", xpReward: 200, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null },
+      { id: "g_sofa", title: "Sofá 3 lugares", description: "Reserva para o sofá da sala", type: "financeira", targetAmount: 3500, currentAmount: 1200, deadline: day(90), category: "apartamento", linkedModule: "apartamento", xpReward: 150, status: "em_andamento", createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null },
+      { id: "g_buffet", title: "Reserva para buffet", description: "Guardar para o buffet", type: "financeira", targetAmount: 8000, currentAmount: 2500, deadline: day(183), category: "casamento", linkedModule: "casamento", xpReward: 150, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null },
+      { id: "g_emergency", title: "Reserva de emergência", description: "Reserva de segurança", type: "financeira", targetAmount: 10000, currentAmount: 4300, deadline: day(365), category: "reserva_emergencia", linkedModule: null, xpReward: 150, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null },
+      { id: "g_fridge", title: "Geladeira nova", description: "Nova geladeira para a cozinha", type: "financeira", targetAmount: 4000, currentAmount: 4000, deadline: day(-1), category: "apartamento", linkedModule: "apartamento", xpReward: 150, status: "concluida", createdBy: THAIANE_ID, createdAt: nowISO, completedAt: at(-11, 12) },
+      
+      { id: "g_seed_1", title: "Entregar 5 projetos este mês", description: "Entregas da FlowSys no prazo", type: "projeto", targetAmount: 5, currentAmount: 2, unit: "projetos", deadline: "2026-07-31", category: null, linkedModule: "projetos", xpReward: 100, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null },
+      {
+        id: "g_seed_2",
+        title: "Estudar 1h por dia",
+        description: "Manter o ritmo de estudos diários",
+        type: "pessoal",
+        targetAmount: 7,
+        currentAmount: 2,
+        unit: "dias",
+        checklist: [
+          { id: "ci1", title: "Segunda", completed: true },
+          { id: "ci2", title: "Terça", completed: true },
+          { id: "ci3", title: "Quarta", completed: false },
+          { id: "ci4", title: "Quinta", completed: false },
+          { id: "ci5", title: "Sexta", completed: false },
+          { id: "ci6", title: "Sábado", completed: false },
+          { id: "ci7", title: "Domingo", completed: false }
+        ],
+        deadline: day(6),
+        category: null,
+        linkedModule: null,
+        xpReward: 50,
+        status: "em_andamento",
+        createdBy: LUCAS_ID,
+        createdAt: nowISO,
+        completedAt: null
+      },
+      {
+        id: "g_seed_3",
+        title: "Mobiliar sala completa",
+        description: "Itens prioritários da sala do apartamento",
+        type: "apartamento",
+        targetAmount: 5,
+        currentAmount: 0,
+        unit: "itens",
+        checklist: [
+          { id: "ci8", title: "Sofá", completed: false },
+          { id: "ci9", title: "Mesa centro", completed: false },
+          { id: "ci10", title: "Rack TV", completed: false },
+          { id: "ci11", title: "Tapete", completed: false },
+          { id: "ci12", title: "Cortina", completed: false }
+        ],
+        deadline: "2026-09-30",
+        category: "apartamento",
+        linkedModule: "apartamento",
+        xpReward: 80,
+        status: "em_andamento",
+        createdBy: THAIANE_ID,
+        createdAt: nowISO,
+        completedAt: null
+      },
+      { id: "g_seed_4", title: "Definir 3 fornecedores do casamento", description: "Orçar e assinar contratos", type: "casamento", targetAmount: 3, currentAmount: 0, unit: "fornecedores", deadline: "2026-08-31", category: "casamento", linkedModule: "casamento", xpReward: 60, status: "em_andamento", createdBy: THAIANE_ID, createdAt: nowISO, completedAt: null },
+      { id: "g_seed_5", title: "Fazer exercício 4x por semana", description: "Academia, corrida ou esportes", type: "pessoal", targetAmount: 4, currentAmount: 1, unit: "treinos", deadline: day(5), category: null, linkedModule: null, xpReward: 30, status: "em_andamento", createdBy: LUCAS_ID, createdAt: nowISO, completedAt: null }
     ],
     apartmentItems: [
-      { id: "ai1", room: "sala", name: "Sofá 3 lugares", estimatedCost: 3500, actualCost: null, priority: "essencial", status: "pesquisando", purchaseDeadline: day(45), storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
-      { id: "ai2", room: "cozinha", name: "Geladeira", estimatedCost: 4200, actualCost: 4000, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "Frost free", createdBy: THAIANE_ID, createdAt: nowISO },
-      { id: "ai3", room: "quarto", name: "Cama box queen", estimatedCost: 2500, actualCost: null, priority: "essencial", status: "orcado", purchaseDeadline: day(30), storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "ai4", room: "sala", name: "Smart TV 55\"", estimatedCost: 2800, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: day(60), storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      // Sala
+      { id: "ai_s1", room: "sala", name: "Sofá 3 lugares retrátil", estimatedCost: 3500, actualCost: null, priority: "essencial", status: "pesquisando", purchaseDeadline: "2026-09-30", storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_s2", room: "sala", name: "Mesa de centro", estimatedCost: 600, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: "2026-09-30", storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_s3", room: "sala", name: "Rack para TV 65'", estimatedCost: 1200, actualCost: null, priority: "essencial", status: "orcado", purchaseDeadline: "2026-08-31", storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_s4", room: "sala", name: "Tapete 2x3m", estimatedCost: 450, actualCost: null, priority: "desejavel", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_s5", room: "sala", name: "Cortina sala", estimatedCost: 350, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_s6", room: "sala", name: "Painel de parede", estimatedCost: 800, actualCost: null, priority: "desejavel", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+
+      // Quarto
+      { id: "ai_q1", room: "quarto", name: "Cama box casal", estimatedCost: 2800, actualCost: 2650, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_q2", room: "quarto", name: "Guarda-roupa 6 portas", estimatedCost: 2500, actualCost: null, priority: "essencial", status: "orcado", purchaseDeadline: "2026-08-31", storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_q3", room: "quarto", name: "Criado-mudo (x2)", estimatedCost: 600, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_q4", room: "quarto", name: "Colchão ortopédico", estimatedCost: 1800, actualCost: 1750, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_q5", room: "quarto", name: "Cortina blackout", estimatedCost: 280, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+
+      // Cozinha
+      { id: "ai_c1", room: "cozinha", name: "Geladeira frost free", estimatedCost: 4000, actualCost: 3800, priority: "essencial", status: "entregue", purchaseDeadline: null, storeLink: null, notes: "Frost free", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_c2", room: "cozinha", name: "Fogão 5 bocas", estimatedCost: 1800, actualCost: 1750, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_c3", room: "cozinha", name: "Microondas 30L", estimatedCost: 650, actualCost: null, priority: "essencial", status: "orcado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_c4", room: "cozinha", name: "Jogo de panelas", estimatedCost: 400, actualCost: 380, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_c5", room: "cozinha", name: "Mesa de jantar 6 lugares", estimatedCost: 1500, actualCost: null, priority: "essencial", status: "pesquisando", purchaseDeadline: "2026-09-30", storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+
+      // Banheiro
+      { id: "ai_b1", room: "banheiro", name: "Armário com espelho", estimatedCost: 500, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_b2", room: "banheiro", name: "Jogo de toalhas", estimatedCost: 200, actualCost: 180, priority: "desejavel", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+
+      // Lavanderia
+      { id: "ai_l1", room: "lavanderia", name: "Máquina de lavar 11kg", estimatedCost: 2200, actualCost: null, priority: "essencial", status: "orcado", purchaseDeadline: "2026-08-31", storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_l2", room: "lavanderia", name: "Varal de teto", estimatedCost: 150, actualCost: 130, priority: "essencial", status: "comprado", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+
+      // Escritório
+      { id: "ai_e1", room: "escritório", name: "Mesa de escritório 1.40m", estimatedCost: 800, actualCost: null, priority: "essencial", status: "pesquisando", purchaseDeadline: "2026-08-31", storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_e2", room: "escritório", name: "Cadeira ergonômica", estimatedCost: 1200, actualCost: null, priority: "essencial", status: "pesquisando", purchaseDeadline: "2026-08-31", storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "ai_e3", room: "escritório", name: "Monitor secundário 24'", estimatedCost: 900, actualCost: null, priority: "importante", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "ai_e4", room: "escritório", name: "Luminária de mesa", estimatedCost: 150, actualCost: null, priority: "desejavel", status: "pesquisando", purchaseDeadline: null, storeLink: null, notes: "", createdBy: LUCAS_ID, createdAt: nowISO }
     ],
     weddingTasks: [
       { id: "wt1", title: "Escolher local da cerimônia", description: "", deadline: day(30), assignee: "ambos", status: "fazendo", createdAt: nowISO, completedAt: null },

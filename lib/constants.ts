@@ -5,6 +5,10 @@ import type {
   ProjectStatus,
   ServiceType,
   Assignee,
+  ExpenseCategory,
+  FinanceCategory,
+  FinancialGoalCategory,
+  IncomeCategory,
 } from "@/types";
 
 /** Category metadata — label + the CSS var color token. */
@@ -51,4 +55,39 @@ export const ASSIGNEE_META: Record<Assignee, { label: string }> = {
   lucas: { label: "Lucas" },
   thaiane: { label: "Thaiane" },
   ambos: { label: "Ambos" },
+};
+
+export const INCOME_CATEGORY_META: Record<IncomeCategory, { label: string; color: string }> = {
+  flowsys: { label: "FlowSys", color: "var(--success)" },
+  freelance: { label: "Freelance", color: "var(--cat-flowsys)" },
+  salario: { label: "Salario", color: "var(--cat-pessoal)" },
+  investimentos: { label: "Investimentos", color: "var(--cat-apartamento)" },
+  outros: { label: "Outros", color: "var(--text-secondary)" },
+};
+
+export const EXPENSE_CATEGORY_META: Record<ExpenseCategory, { label: string; color: string }> = {
+  moradia: { label: "Moradia", color: "var(--brand-purple)" },
+  alimentacao: { label: "Alimentacao", color: "var(--cat-financeiro)" },
+  transporte: { label: "Transporte", color: "var(--cat-pessoal)" },
+  lazer: { label: "Lazer", color: "var(--cat-casamento)" },
+  saude: { label: "Saude", color: "var(--danger)" },
+  apartamento: { label: "Apartamento", color: "var(--cat-apartamento)" },
+  casamento: { label: "Casamento", color: "var(--cat-casamento)" },
+  flowsys_custo: { label: "FlowSys custo", color: "var(--brand-purple-deep)" },
+  educacao: { label: "Educacao", color: "var(--info)" },
+  outros: { label: "Outros", color: "var(--text-secondary)" },
+};
+
+export const FINANCE_CATEGORY_META: Record<FinanceCategory, { label: string; color: string }> = {
+  ...INCOME_CATEGORY_META,
+  ...EXPENSE_CATEGORY_META,
+};
+
+export const FINANCIAL_GOAL_CATEGORY_META: Record<FinancialGoalCategory, { label: string; color: string }> = {
+  apartamento: { label: "Apartamento", color: "var(--cat-apartamento)" },
+  casamento: { label: "Casamento", color: "var(--cat-casamento)" },
+  reserva_emergencia: { label: "Reserva", color: "var(--success)" },
+  viagem: { label: "Viagem", color: "var(--cat-pessoal)" },
+  investimento: { label: "Investimento", color: "var(--brand-purple)" },
+  outros: { label: "Outros", color: "var(--text-secondary)" },
 };

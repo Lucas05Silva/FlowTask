@@ -113,6 +113,11 @@ export default function DashboardPage() {
     [data.goals],
   );
 
+  const apartmentItems = data.apartmentItems || [];
+  const apTotal = apartmentItems.length;
+  const apCompleted = apartmentItems.filter((i) => i.status === "comprado" || i.status === "entregue").length;
+  const apPercentage = apTotal > 0 ? Math.round((apCompleted / apTotal) * 100) : 0;
+
   if (!user) return null;
   const hour = new Date().getHours();
 
@@ -230,8 +235,8 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
 
-        <motion.div variants={item}>
-          <Card className="h-full">
+        <motion.div variants={item} className="flex flex-col gap-6">
+          <Card>
             <CardHeader>
               <CardTitle>Metas em destaque</CardTitle>
               <Link href="/metas" className="text-sm font-medium text-brand hover:underline">Ver</Link>
@@ -246,6 +251,20 @@ export default function DashboardPage() {
                   <ProgressBar value={pct(g.currentAmount, g.targetAmount)} />
                 </div>
               ))}
+            </div>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Apartamento 🏠</CardTitle>
+              <Link href="/apartamento" className="text-sm font-medium text-brand hover:underline">Ver</Link>
+            </CardHeader>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-xs font-semibold">
+                <span className="text-muted">{apCompleted} de {apTotal} itens</span>
+                <span className="font-bold text-brand">{apPercentage}% comprado</span>
+              </div>
+              <ProgressBar value={apPercentage} />
             </div>
           </Card>
         </motion.div>

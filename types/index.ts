@@ -115,6 +115,27 @@ export interface Project {
 }
 
 export type FinanceType = "income" | "expense";
+export type FinanceRecurrenceRule = "mensal" | "semanal" | "anual";
+export type IncomeCategory = "flowsys" | "freelance" | "salario" | "investimentos" | "outros";
+export type ExpenseCategory =
+  | "moradia"
+  | "alimentacao"
+  | "transporte"
+  | "lazer"
+  | "saude"
+  | "apartamento"
+  | "casamento"
+  | "flowsys_custo"
+  | "educacao"
+  | "outros";
+export type FinanceCategory = IncomeCategory | ExpenseCategory;
+export type FinancialGoalCategory =
+  | "apartamento"
+  | "casamento"
+  | "reserva_emergencia"
+  | "viagem"
+  | "investimento"
+  | "outros";
 
 export interface FinanceEntry {
   id: ID;
@@ -122,10 +143,10 @@ export interface FinanceEntry {
   amount: number;
   description: string;
   date: string;
-  category: string;
+  category: FinanceCategory;
   tags: string[];
   isRecurring: boolean;
-  recurrenceRule: RecurrenceRule | null;
+  recurrenceRule: FinanceRecurrenceRule | null;
   createdBy: ID;
   createdAt: string;
 }
@@ -137,12 +158,15 @@ export interface Debt {
   name: string;
   totalAmount: number;
   paidAmount: number;
-  installmentsRemaining: number;
+  installmentsTotal: number;
+  installmentsPaid: number;
   dueDay: number;
   interestRate: number | null;
   status: DebtStatus;
+  notes: string;
   createdBy: ID;
   createdAt: string;
+  paidAt: string | null;
 }
 
 export type GoalType =
@@ -153,6 +177,11 @@ export type GoalType =
   | "casamento";
 
 export type GoalStatus = "em_andamento" | "concluida" | "atrasada";
+export interface GoalCheckItem {
+  id: string;
+  title: string;
+  completed: boolean;
+}
 
 export interface Goal {
   id: ID;
@@ -161,13 +190,17 @@ export interface Goal {
   type: GoalType;
   targetAmount: number;
   currentAmount: number;
+  unit?: string;
+  checklist?: GoalCheckItem[];
   deadline: string | null;
   category: string | null;
   linkedModule: string | null;
+  linkedId?: string | null;
   xpReward: number;
   status: GoalStatus;
   createdBy: ID;
   createdAt: string;
+  completedAt: string | null;
 }
 
 export type Room =
@@ -183,7 +216,7 @@ export type ItemStatus = "pesquisando" | "orcado" | "comprado" | "entregue";
 
 export interface ApartmentItem {
   id: ID;
-  room: Room;
+  room: string;
   name: string;
   estimatedCost: number;
   actualCost: number | null;

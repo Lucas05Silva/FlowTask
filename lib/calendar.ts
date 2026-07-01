@@ -1,4 +1,4 @@
-import type { CalendarEvent, FlowTaskData, Project, Task } from "@/types";
+import type { CalendarEvent, Debt, FlowTaskData, Project, Task, ApartmentItem } from "@/types";
 import { CATEGORY_META } from "@/lib/constants";
 
 /** Unified item consumed by the calendar views (aggregates every source). */
@@ -115,9 +115,55 @@ function projectToItem(p: Project): CalendarItem {
   };
 }
 
+function debtToItems(d: Debt): CalendarItem[] {
+  if (d.status === "quitada") return [];
+  const items: CalendarItem[] = [];
+  const now = new Date();
+  const currentYear = now.getFullYear();
+
+  for (let year = currentYear - 1; year <= currentYear + 1; year++) {
+    for (let month = 0; month < 12; month++) {
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const targetDay = Math.min(d.dueDay, lastDay);
+      const padStr = (n: number) => String(n).padStart(2, "0");
+      const dateStr = `${year}-${padStr(month + 1)}-${padStr(targetDay)}`;
+
+      items.push({
+        id: `debt-${d.id}-${year}-${month}`,
+        title: `Vencimento: ${d.name}`,
+        date: dateStr,
+        type: "debt",
+        category: "financeiro",
+        color: "var(--cat-financeiro)",
+        icon: "DollarSign",
+        isAllDay: true,
+        originalId: d.id,
+        originalModule: "financeiro",
+      });
+    }
+  }
+  return items;
+}
+
+function apartmentItemToItem(item: ApartmentItem): CalendarItem | null {
+  if (!item.purchaseDeadline || item.status === "comprado" || item.status === "entregue") return null;
+  return {
+    id: `apartment-${item.id}`,
+    title: `Comprar: ${item.name}`,
+    date: item.purchaseDeadline,
+    type: "task",
+    category: "apartamento",
+    color: "var(--cat-apartamento)",
+    icon: "Home",
+    isAllDay: true,
+    originalId: item.id,
+    originalModule: "apartamento",
+  };
+}
+
 /**
  * Aggregate all sources into a flat CalendarItem list.
- * Wires Tasks + own Events + Project deadlines. Debts/wedding plug in here later.
+ * Wires Tasks + own Events + Project deadlines + Active debts.
  */
 export function aggregateItems(data: FlowTaskData): CalendarItem[] {
   const items: CalendarItem[] = [];
@@ -128,6 +174,13 @@ export function aggregateItems(data: FlowTaskData): CalendarItem[] {
   for (const e of data.events) items.push(eventToItem(e));
   for (const p of data.projects) {
     if (p.status !== "feito") items.push(projectToItem(p));
+  }
+  for (const d of data.debts) {
+    items.push(...debtToItems(d));
+  }
+  for (const item of data.apartmentItems || []) {
+    const calItem = apartmentItemToItem(item);
+    if (calItem) items.push(calItem);
   }
   return items;
 }
