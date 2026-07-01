@@ -178,7 +178,7 @@ export default function DashboardPage() {
                   <li key={e.id} className="flex items-center gap-3 rounded-input border border-line p-3">
                     <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_META[e.category].color }} />
                     <span className="flex-1 truncate text-sm font-medium text-content">{e.title}</span>
-                    <Badge>{formatDate(e.startDatetime, { hour: "2-digit", minute: "2-digit" })}</Badge>
+                    <Badge>{e.isAllDay ? "Dia todo" : formatDate(e.startDatetime, { hour: "2-digit", minute: "2-digit" })}</Badge>
                   </li>
                 ))}
                 {todayTasks.map((t) => (

@@ -17,6 +17,12 @@ function at(offset: number, hour: number, min = 0): string {
   return d.toISOString();
 }
 
+/** Local (no-Z) ISO datetime for a day offset + time, e.g. "2026-07-03T14:00:00". */
+function dt(offset: number, hour: number, min = 0): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${day(offset)}T${pad(hour)}:${pad(min)}:00`;
+}
+
 const nowISO = new Date().toISOString();
 
 export const LUCAS_ID = "lucas";
@@ -166,9 +172,14 @@ export function seedData(): FlowTaskData {
       },
     ],
     events: [
-      { id: "e1", title: "Entrega LP Incont Care", startDatetime: at(0, 18), endDatetime: at(0, 19), category: "flowsys", location: null, notes: "Deadline final", createdBy: LUCAS_ID, createdAt: nowISO },
-      { id: "e2", title: "Degustação Buffet", startDatetime: at(3, 15), endDatetime: at(3, 17), category: "casamento", location: "Espaço Villa", notes: null, createdBy: THAIANE_ID, createdAt: nowISO },
-      { id: "e3", title: "Entrega do sofá", startDatetime: at(6, 10), endDatetime: at(6, 12), category: "apartamento", location: null, notes: null, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "e1", title: "Reunião com cliente Incont Care", startDatetime: dt(3, 14, 0), endDatetime: dt(3, 15, 0), category: "flowsys", location: "Google Meet", notes: null, isAllDay: false, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "e2", title: "Aniversário da mãe do Lucas", startDatetime: dt(8, 0, 0), endDatetime: dt(8, 23, 59), category: "pessoal", location: null, notes: null, isAllDay: true, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "e3", title: "Visita ao salão de festas", startDatetime: dt(12, 10, 0), endDatetime: dt(12, 12, 0), category: "casamento", location: "Rua das Flores, 123", notes: null, isAllDay: false, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "e4", title: "Entrega da geladeira", startDatetime: dt(18, 9, 0), endDatetime: dt(18, 12, 0), category: "apartamento", location: "Apartamento", notes: null, isAllDay: false, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "e5", title: "Consulta dentista Thaiane", startDatetime: dt(22, 16, 0), endDatetime: dt(22, 17, 0), category: "pessoal", location: null, notes: null, isAllDay: false, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "e6", title: "Call alinhamento tráfego pago", startDatetime: dt(5, 11, 0), endDatetime: dt(5, 11, 30), category: "flowsys", location: null, notes: null, isAllDay: false, createdBy: THAIANE_ID, createdAt: nowISO },
+      { id: "e7", title: "Churrasco com amigos", startDatetime: dt(26, 12, 0), endDatetime: dt(26, 18, 0), category: "pessoal", location: "Casa do Pedro", notes: null, isAllDay: false, createdBy: LUCAS_ID, createdAt: nowISO },
+      { id: "e8", title: "Feira de móveis planejados", startDatetime: dt(19, 14, 0), endDatetime: dt(19, 17, 0), category: "apartamento", location: "Expo Center", notes: null, isAllDay: false, createdBy: LUCAS_ID, createdAt: nowISO },
     ],
     projects: [
       {

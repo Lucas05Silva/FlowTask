@@ -83,6 +83,7 @@ export interface CalendarEvent {
   category: Category;
   location: string | null;
   notes: string | null;
+  isAllDay: boolean;
   createdBy: ID;
   createdAt: string;
 }
