@@ -44,6 +44,24 @@ export function countdownLabel(iso: string): string {
   return `Faltam ${d} dias`;
 }
 
+/** Relative time from an ISO datetime, pt-BR: "agora", "há 5min", "há 2h", "ontem", "há 3 dias". */
+export function relativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const min = Math.floor(diffMs / 60000);
+  if (min < 1) return "agora";
+  if (min < 60) return `há ${min}min`;
+  const hours = Math.floor(min / 60);
+  if (hours < 24) return `há ${hours}h`;
+  const days = Math.floor(hours / 24);
+  if (days === 1) return "ontem";
+  if (days < 7) return `há ${days} dias`;
+  const weeks = Math.floor(days / 7);
+  if (weeks < 5) return `há ${weeks} sem`;
+  return formatDate(iso, { day: "2-digit", month: "short" });
+}
+
 /** Crypto-safe-ish id for mock records. */
 export function uid(prefix = "id"): string {
   return `${prefix}_${Math.random().toString(36).slice(2, 10)}${Date.now().toString(36)}`;

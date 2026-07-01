@@ -281,11 +281,13 @@ export interface UserAchievement {
 
 export type NotificationType =
   | "prazo"
-  | "atrasada"
+  | "atrasado"
   | "divida"
   | "meta"
   | "conquista"
-  | "level_up";
+  | "levelup"
+  | "streak"
+  | "info";
 
 export interface AppNotification {
   id: ID;
@@ -294,6 +296,8 @@ export interface AppNotification {
   title: string;
   message: string;
   isRead: boolean;
+  link?: string;
+  icon?: string;
   createdAt: string;
 }
 

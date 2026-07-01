@@ -8,6 +8,7 @@ import {
   Target,
   Sofa,
   HeartHandshake,
+  Bell,
 } from "lucide-react";
 
 export interface NavItem {
@@ -27,6 +28,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/metas", label: "Metas", icon: Target },
   { href: "/apartamento", label: "Apê", icon: Sofa },
   { href: "/casamento", label: "Casamento", icon: HeartHandshake },
+  { href: "/notificacoes", label: "Notificações", icon: Bell },
 ];
 
 export const PRIMARY_MOBILE_ITEMS = NAV_ITEMS.filter((i) => i.primaryMobile);

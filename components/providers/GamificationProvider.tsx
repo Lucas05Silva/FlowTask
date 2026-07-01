@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useState, type ReactNode } from
 import type { CelebrationResult } from "@/lib/gamification";
 import { fireConfetti, fireBigConfetti } from "@/lib/confetti";
 import { useToast } from "./ToastProvider";
+import { useNotifications } from "@/hooks/useNotifications";
 import { LevelUpModal } from "@/components/gamification/LevelUpModal";
 
 interface GamificationContextValue {
@@ -15,6 +16,7 @@ const GamificationContext = createContext<GamificationContextValue | null>(null)
 
 export function GamificationProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
+  const { addNotification } = useNotifications();
   const [levelUp, setLevelUp] = useState<{ level: number; title: string } | null>(null);
 
   const celebrate = useCallback(
@@ -29,13 +31,26 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           () => toast({ variant: "achievement", title: `Conquista: ${ach.title}`, description: ach.description }),
           (i + 1) * 350,
         );
+        // Persist a real-time notification (title includes the achievement name for dedup).
+        addNotification({
+          type: "conquista",
+          title: `Conquista: ${ach.title}`,
+          message: `🏆 Você desbloqueou "${ach.title}"!`,
+          link: "/perfil",
+        });
       });
       if (result.leveledUp) {
         void fireBigConfetti();
         setLevelUp({ level: result.newLevel, title: result.newTitle });
+        addNotification({
+          type: "levelup",
+          title: `Nível ${result.newLevel} alcançado`,
+          message: `⬆️ Parabéns! Você subiu para o Nível ${result.newLevel} — ${result.newTitle}!`,
+          link: "/perfil",
+        });
       }
     },
-    [toast],
+    [toast, addNotification],
   );
 
   return (
