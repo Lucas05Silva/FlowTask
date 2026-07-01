@@ -88,10 +88,12 @@ export interface CalendarEvent {
   createdAt: string;
 }
 
+export type StepStatus = "pendente" | "concluido";
+
 export interface ProjectStep {
   id: ID;
   title: string;
-  status: ProjectStatus;
+  status: StepStatus;
   order: number;
   completedAt: string | null;
 }

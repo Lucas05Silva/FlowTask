@@ -1,4 +1,5 @@
 import type { Priority, RecurrenceRule, FlowTaskData, Achievement } from "@/types";
+import { uid } from "@/lib/utils";
 
 /** Side effects of an XP-earning action, surfaced to the UI for toasts/modals. */
 export interface CelebrationResult {
@@ -93,6 +94,7 @@ export function evaluateAchievements(data: FlowTaskData, userId: string): string
   const user = data.users.find((u) => u.id === userId);
   if (!user) return [];
   const completed = data.tasks.filter((t) => t.status === "concluida").length;
+  const completedProjects = data.projects.filter((p) => p.status === "feito").length;
   const toUnlock: string[] = [];
   const check = (id: string, cond: boolean) => {
     if (cond && !have.has(id)) toUnlock.push(id);
@@ -100,6 +102,8 @@ export function evaluateAchievements(data: FlowTaskData, userId: string): string
   check("ach_first_step", completed >= 1);
   check("ach_week", user.streakCount >= 7);
   check("ach_month", user.streakCount >= 30);
+  check("ach_client", completedProjects >= 1);
+  check("ach_machine", completedProjects >= 10);
   // "Casal produtivo" — both users at the same level
   const [a, b] = data.users;
   if (a && b) check("ach_couple", a.level === b.level && a.level > 1);
@@ -139,5 +143,60 @@ export function levelProgress(xp: number): {
     span,
     intoLevel,
     pct: Math.min(100, Math.round((intoLevel / span) * 100)),
+  };
+}
+
+/**
+ * Award base XP to a user, unlock any newly-earned achievements (which add their
+ * own XP), recompute level, and return the updated data plus a CelebrationResult.
+ * Pure: returns new users/userAchievements arrays (does not mutate input).
+ */
+export function applyReward(
+  data: FlowTaskData,
+  userId: string,
+  baseXp: number,
+): { data: FlowTaskData; result: CelebrationResult } {
+  const empty: CelebrationResult = {
+    xpGained: 0,
+    leveledUp: false,
+    newLevel: 1,
+    newTitle: "",
+    achievements: [],
+    streakCount: 0,
+  };
+  const users = data.users.map((u) => ({ ...u }));
+  const me = users.find((u) => u.id === userId);
+  if (!me) return { data, result: empty };
+
+  const before = me.xp;
+  const levelBefore = levelFromXp(before).level;
+  me.xp += baseXp;
+
+  const snapshot: FlowTaskData = { ...data, users };
+  const ids = evaluateAchievements(snapshot, userId);
+  let userAchievements = data.userAchievements;
+  const unlocked: Achievement[] = [];
+  const now = new Date().toISOString();
+  for (const aid of ids) {
+    const ach = data.achievements.find((a) => a.id === aid);
+    if (!ach) continue;
+    userAchievements = [...userAchievements, { id: uid("ua"), userId, achievementId: aid, unlockedAt: now }];
+    me.xp += ach.xpReward;
+    unlocked.push(ach);
+  }
+
+  const after = levelFromXp(me.xp);
+  me.level = after.level;
+
+  return {
+    data: { ...data, users, userAchievements },
+    result: {
+      xpGained: me.xp - before,
+      leveledUp: after.level > levelBefore,
+      newLevel: after.level,
+      newTitle: after.title,
+      achievements: unlocked,
+      streakCount: me.streakCount,
+    },
   };
 }

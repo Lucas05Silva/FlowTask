@@ -41,7 +41,7 @@ export const PROJECT_STATUS_META: Record<ProjectStatus, { label: string }> = {
 export const SERVICE_TYPE_META: Record<ServiceType, { label: string }> = {
   landing_page: { label: "Landing Page" },
   mklink: { label: "MKlink" },
-  site: { label: "Site" },
+  site: { label: "Site Completo" },
   automacao: { label: "Automação" },
   agente_ia: { label: "Agente de IA" },
   trafego_pago: { label: "Tráfego Pago" },

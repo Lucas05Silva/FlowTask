@@ -261,7 +261,7 @@ export default function DashboardPage() {
             </CardHeader>
             <div className="space-y-3">
               {activeProjects.map((p) => {
-                const done = p.steps.filter((s) => s.status === "feito").length;
+                const done = p.steps.filter((s) => s.status === "concluido").length;
                 return (
                   <div key={p.id} className="rounded-input border border-line p-3">
                     <div className="mb-1.5 flex items-center justify-between gap-2">

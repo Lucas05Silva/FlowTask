@@ -8,7 +8,7 @@ import { LevelUpModal } from "@/components/gamification/LevelUpModal";
 
 interface GamificationContextValue {
   /** Trigger all celebration feedback (confetti + toasts + level-up modal). */
-  celebrate: (result: CelebrationResult) => void;
+  celebrate: (result: CelebrationResult, opts?: { big?: boolean }) => void;
 }
 
 const GamificationContext = createContext<GamificationContextValue | null>(null);
@@ -18,8 +18,9 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
   const [levelUp, setLevelUp] = useState<{ level: number; title: string } | null>(null);
 
   const celebrate = useCallback(
-    (result: CelebrationResult) => {
-      void fireConfetti();
+    (result: CelebrationResult, opts?: { big?: boolean }) => {
+      if (opts?.big) void fireBigConfetti();
+      else void fireConfetti();
       if (result.xpGained > 0) {
         toast({ variant: "xp", title: `+${result.xpGained} XP`, description: "Mandou bem! 🎉" });
       }

@@ -1,4 +1,4 @@
-import type { CalendarEvent, FlowTaskData, Task } from "@/types";
+import type { CalendarEvent, FlowTaskData, Project, Task } from "@/types";
 import { CATEGORY_META } from "@/lib/constants";
 
 /** Unified item consumed by the calendar views (aggregates every source). */
@@ -100,9 +100,24 @@ function eventToItem(ev: CalendarEvent): CalendarItem {
   };
 }
 
+function projectToItem(p: Project): CalendarItem {
+  return {
+    id: `project-${p.id}`,
+    title: `Entrega: ${p.projectName}`,
+    date: p.deadline,
+    type: "project",
+    category: "flowsys",
+    color: "var(--brand-purple-deep)",
+    icon: "Briefcase",
+    isAllDay: true,
+    originalId: p.id,
+    originalModule: "projetos",
+  };
+}
+
 /**
  * Aggregate all sources into a flat CalendarItem list.
- * Fase 3 wires Tasks + own Events. Projects/debts/wedding plug in here later.
+ * Wires Tasks + own Events + Project deadlines. Debts/wedding plug in here later.
  */
 export function aggregateItems(data: FlowTaskData): CalendarItem[] {
   const items: CalendarItem[] = [];
@@ -111,6 +126,9 @@ export function aggregateItems(data: FlowTaskData): CalendarItem[] {
     if (item) items.push(item);
   }
   for (const e of data.events) items.push(eventToItem(e));
+  for (const p of data.projects) {
+    if (p.status !== "feito") items.push(projectToItem(p));
+  }
   return items;
 }
 
