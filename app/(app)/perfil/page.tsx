@@ -256,23 +256,23 @@ export default function PerfilPage() {
           {/* NOTIFICATION PREFERENCES */}
           <NotificationPrefsCard />
 
-          {/* DEMO DATA RESTORE */}
-          <Card className="p-5 border-dashed border-line">
-            <CardTitle className="mb-1 text-sm font-extrabold text-content">Dados de Demonstração</CardTitle>
+          {/* DANGER ZONE — wipe all data */}
+          <Card className="p-5 border-dashed border-danger/30">
+            <CardTitle className="mb-1 text-sm font-extrabold text-content">Zona de perigo</CardTitle>
             <p className="mb-4 text-xs leading-relaxed text-muted">
-              A plataforma está rodando localmente. Você pode redefinir o banco de dados para os valores iniciais de seed a qualquer momento.
+              Apaga <strong>todos os dados reais</strong> (tarefas, finanças, projetos, metas, etc.) e recomeça do zero. Sincroniza com o Supabase e afeta os dois. Esta ação é irreversível.
             </p>
             <Button
               variant="outline"
               size="sm"
               className="w-full text-xs font-bold text-muted hover:text-danger hover:border-danger/30 transition-colors justify-center"
               onClick={() => {
-                if (confirm("Deseja redefinir todo o banco de dados local? Essa ação é irreversível.")) {
+                if (confirm("Apagar TODOS os dados e recomeçar do zero? Esta ação é irreversível e afeta Lucas e Thaiane.")) {
                   resetData();
                 }
               }}
             >
-              Restaurar Base de Seed
+              Limpar todos os dados
             </Button>
           </Card>
         </div>

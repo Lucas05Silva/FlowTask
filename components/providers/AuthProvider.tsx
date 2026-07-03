@@ -1,6 +1,6 @@
 "use client";
 
-/* Mount-time hydration sync from localStorage — setState in effect is intentional here. */
+/* Session state is synced from Supabase Auth — setState in effect is intentional. */
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import {
@@ -11,55 +11,78 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import type { Session } from "@supabase/supabase-js";
 import type { User } from "@/types";
-import { getData } from "@/lib/data/store";
+import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
+import { hydrate, teardownData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 
 interface AuthContextValue {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string) => { ok: boolean; error?: string };
-  logout: () => void;
+  login: (email: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const AUTH_KEY = "flowtask:auth";
-
-/** Mock credentials — replaced by Supabase Auth in the integration phase. */
-const MOCK_PASSWORD = "flowtask";
+function translateError(message: string): string {
+  const m = message.toLowerCase();
+  if (m.includes("invalid login credentials")) return "E-mail ou senha incorretos.";
+  if (m.includes("email not confirmed")) return "E-mail ainda não confirmado.";
+  if (m.includes("network")) return "Falha de conexão. Tente novamente.";
+  return "Não foi possível entrar.";
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const data = useData();
-  const [userId, setUserId] = useState<string | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setUserId(localStorage.getItem(AUTH_KEY));
-    setLoading(false);
+    if (!supabaseConfigured) {
+      setLoading(false);
+      return;
+    }
+    const sb = getSupabase();
+    sb.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+      if (session) void hydrate();
+    });
+    const { data: sub } = sb.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      if (session) void hydrate();
+      else teardownData();
+    });
+    return () => sub.subscription.unsubscribe();
   }, []);
 
-  const login = useCallback((email: string, password: string) => {
-    const normalized = email.trim().toLowerCase();
-    const match = getData().users.find((u) => u.email.toLowerCase() === normalized);
-    if (!match) return { ok: false, error: "E-mail não encontrado." };
-    if (password !== MOCK_PASSWORD) return { ok: false, error: "Senha incorreta." };
-    localStorage.setItem(AUTH_KEY, match.id);
-    setUserId(match.id);
+  const login = useCallback(async (email: string, password: string) => {
+    if (!supabaseConfigured) return { ok: false, error: "Supabase não configurado." };
+    const { error } = await getSupabase().auth.signInWithPassword({
+      email: email.trim(),
+      password,
+    });
+    if (error) return { ok: false, error: translateError(error.message) };
     return { ok: true };
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(AUTH_KEY);
-    setUserId(null);
+  const logout = useCallback(async () => {
+    if (supabaseConfigured) await getSupabase().auth.signOut();
+    teardownData();
   }, []);
 
-  const user = userId ? (data.users.find((u) => u.id === userId) ?? null) : null;
+  const user = session
+    ? data.users.find(
+        (u) =>
+          u.id === session.user.id ||
+          (!!session.user.email && u.email.toLowerCase() === session.user.email.toLowerCase()),
+      ) ?? null
+    : null;
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, logout }}>{children}</AuthContext.Provider>
   );
 }
 

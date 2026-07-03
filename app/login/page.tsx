@@ -22,13 +22,13 @@ export default function LoginPage() {
     if (!loading && user) router.replace("/dashboard");
   }, [loading, user, router]);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const res = login(email, password);
+    const res = await login(email, password);
     if (res.ok) {
-      router.push("/dashboard");
+      router.replace("/dashboard");
     } else {
       setError(res.error ?? "Não foi possível entrar.");
       setSubmitting(false);
@@ -104,9 +104,8 @@ export default function LoginPage() {
             </Button>
           </form>
 
-          <p className="mt-5 rounded-input bg-panel px-3 py-2 text-center text-xs text-muted">
-            Demo: <strong>lukasoliveira47210@gmail.com</strong> ou{" "}
-            <strong>thaiane@flowtask.app</strong> · senha <strong>flowtask</strong>
+          <p className="mt-5 text-center text-xs text-muted">
+            Acesso exclusivo de Lucas &amp; Thaiane 💜
           </p>
         </div>
       </motion.div>
