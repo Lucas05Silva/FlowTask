@@ -23,7 +23,7 @@ import { resetData } from "@/lib/data/store";
 import { levelFromXp } from "@/lib/gamification";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardTitle } from "@/components/ui/Card";
-import { Avatar } from "@/components/ui/Avatar";
+import { AvatarUpload } from "@/components/profile/AvatarUpload";
 import { Button } from "@/components/ui/Button";
 import { LevelBadge } from "@/components/gamification/LevelBadge";
 import { StreakCounter } from "@/components/gamification/StreakCounter";
@@ -119,7 +119,7 @@ export default function PerfilPage() {
 
         <div className="relative flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
           <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-            <Avatar user={user} size={92} ring className="shadow-pop" />
+            <AvatarUpload />
             <div className="space-y-1">
               <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <h2 className="text-2xl font-black text-content">{user.name}</h2>

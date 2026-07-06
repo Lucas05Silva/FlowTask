@@ -1,4 +1,9 @@
-import Image from "next/image";
+"use client";
+
+/* Reset broken-image state when the avatar URL changes — intentional. */
+/* eslint-disable react-hooks/set-state-in-effect */
+
+import { useEffect, useState } from "react";
 import type { User } from "@/types";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +15,13 @@ interface AvatarProps {
 }
 
 export function Avatar({ user, size = 40, className, ring = false }: AvatarProps) {
-  const dimension = { width: size, height: size };
+  const [broken, setBroken] = useState(false);
+
+  // Reset the error state when the URL changes (e.g. after a new upload).
+  useEffect(() => setBroken(false), [user.avatarUrl]);
+
+  const showImage = user.avatarUrl && !broken;
+
   return (
     <span
       className={cn(
@@ -18,11 +29,19 @@ export function Avatar({ user, size = 40, className, ring = false }: AvatarProps
         ring && "ring-2 ring-brand ring-offset-2 ring-offset-surface",
         className,
       )}
-      style={{ ...dimension, fontSize: size * 0.45 }}
+      style={{ width: size, height: size, fontSize: size * 0.45 }}
       aria-hidden
     >
-      {user.avatarUrl ? (
-        <Image src={user.avatarUrl} alt="" width={size} height={size} className="size-full object-cover" />
+      {showImage ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={user.avatarUrl as string}
+          alt=""
+          width={size}
+          height={size}
+          className="size-full object-cover"
+          onError={() => setBroken(true)}
+        />
       ) : user.avatarEmoji ? (
         <span style={{ fontSize: size * 0.5 }}>{user.avatarEmoji}</span>
       ) : (
