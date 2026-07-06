@@ -229,21 +229,28 @@ async function fetchAll(): Promise<FlowTaskData> {
 function subscribeRealtime(): void {
   if (!supabaseConfigured || channel) return;
   const sb = getSupabase();
-  channel = sb
-    .channel("flowtask_sync")
-    .on("postgres_changes", { event: "*", schema: "public" }, () => {
-      if (Date.now() < suppressRealtimeUntil) return;
-      if (refreshTimer) clearTimeout(refreshTimer);
-      refreshTimer = setTimeout(async () => {
-        try {
-          cache = await fetchAll();
-          emit();
-        } catch (e) {
-          console.warn("[store] realtime refresh failed:", e);
-        }
-      }, 500);
-    })
-    .subscribe();
+
+  const onRemoteChange = () => {
+    // Ignore the echo of our own recent writes.
+    if (Date.now() < suppressRealtimeUntil) return;
+    if (refreshTimer) clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(async () => {
+      try {
+        cache = await fetchAll();
+        emit();
+      } catch (e) {
+        console.warn("[store] realtime refresh failed:", e);
+      }
+    }, 400);
+  };
+
+  // Subscribe per table (reliable delivery across supabase-js versions).
+  let ch = sb.channel("flowtask_sync");
+  const tables = [...COLLECTIONS.map((c) => c.table), WEDDING_CONFIG_TABLE];
+  for (const table of tables) {
+    ch = ch.on("postgres_changes", { event: "*", schema: "public", table }, onRemoteChange);
+  }
+  channel = ch.subscribe();
 }
 
 /** Fetch everything after login. Safe to call multiple times. */
