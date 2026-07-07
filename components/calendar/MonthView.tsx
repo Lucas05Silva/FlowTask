@@ -12,9 +12,10 @@ interface MonthViewProps {
   monthItems: Map<string, CalendarItem[]>;
   direction: number;
   onSelectDate: (key: string) => void;
+  onItemClick: (item: CalendarItem) => void;
 }
 
-export function MonthView({ cursor, selectedKey, monthItems, direction, onSelectDate }: MonthViewProps) {
+export function MonthView({ cursor, selectedKey, monthItems, direction, onSelectDate, onItemClick }: MonthViewProps) {
   const year = cursor.getFullYear();
   const month = cursor.getMonth();
   const cells = buildMonthGrid(year, month);
@@ -44,13 +45,20 @@ export function MonthView({ cursor, selectedKey, monthItems, direction, onSelect
             const isToday = cell.key === todayKey;
             const isSelected = cell.key === selectedKey;
             return (
-              <button
+              <div
                 key={cell.key}
                 role="gridcell"
+                tabIndex={0}
                 aria-label={`${cell.date.getDate()} de ${WEEKDAYS_SHORT[cell.date.getDay()]}, ${items.length} ${items.length === 1 ? "item" : "itens"}`}
                 onClick={() => onSelectDate(cell.key)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSelectDate(cell.key);
+                  }
+                }}
                 className={cn(
-                  "flex min-h-[52px] flex-col items-stretch gap-1 rounded-input border p-1 text-left transition-colors sm:min-h-[80px] lg:min-h-[104px]",
+                  "flex min-h-[52px] cursor-pointer flex-col items-stretch gap-1 rounded-input border p-1 text-left transition-colors sm:min-h-[80px] lg:min-h-[104px]",
                   cell.inMonth ? "border-line hover:bg-panel" : "border-transparent opacity-35 hover:opacity-60",
                   isSelected && !isToday && "border-brand",
                   items.length > 0 && cell.inMonth && "bg-panel/40",
@@ -65,7 +73,7 @@ export function MonthView({ cursor, selectedKey, monthItems, direction, onSelect
                   {cell.date.getDate()}
                 </span>
 
-                {/* Dots */}
+                {/* Dots (mobile) */}
                 {items.length > 0 && (
                   <span className="flex flex-wrap items-center gap-1 px-0.5 lg:hidden">
                     {items.slice(0, 4).map((it) => (
@@ -75,21 +83,38 @@ export function MonthView({ cursor, selectedKey, monthItems, direction, onSelect
                   </span>
                 )}
 
-                {/* Titles (desktop) */}
+                {/* Titles (desktop) — each chip opens its details */}
                 <span className="hidden flex-1 flex-col gap-0.5 lg:flex">
                   {items.slice(0, 3).map((it) => (
-                    <span
+                    <button
                       key={it.id}
-                      className="truncate rounded px-1 py-0.5 text-[11px] font-medium leading-tight"
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onItemClick(it);
+                      }}
+                      title={it.title}
+                      className="truncate rounded px-1 py-0.5 text-left text-[11px] font-medium leading-tight transition-transform hover:brightness-95 hover:saturate-150"
                       style={{ color: it.color, backgroundColor: `color-mix(in srgb, ${it.color} 12%, transparent)` }}
                     >
                       {it.startTime ? `${it.startTime} ` : ""}
                       {it.title}
-                    </span>
+                    </button>
                   ))}
-                  {items.length > 3 && <span className="px-1 text-[10px] text-muted">+{items.length - 3} mais</span>}
+                  {items.length > 3 && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectDate(cell.key);
+                      }}
+                      className="px-1 text-left text-[10px] text-muted hover:text-content"
+                    >
+                      +{items.length - 3} mais
+                    </button>
+                  )}
                 </span>
-              </button>
+              </div>
             );
           })}
         </motion.div>

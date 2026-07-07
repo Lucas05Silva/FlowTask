@@ -14,6 +14,7 @@ import { CalendarNavigation } from "./CalendarNavigation";
 import { MonthView } from "./MonthView";
 import { DayView } from "./DayView";
 import { EventModal } from "./EventModal";
+import { CalendarItemModal } from "./CalendarItemModal";
 
 export function CalendarPage() {
   const router = useRouter();
@@ -21,6 +22,8 @@ export function CalendarPage() {
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
+  const [detailItem, setDetailItem] = useState<CalendarItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
 
   const dayItems = useMemo(() => cal.getItemsForDate(cal.selectedKey), [cal]);
 
@@ -42,14 +45,14 @@ export function CalendarPage() {
   }
 
   function handleItemClick(item: CalendarItem) {
-    if (item.type === "event") {
-      const ev = cal.events.find((e) => e.id === item.originalId) ?? null;
-      setEditingEvent(ev);
-      setModalOpen(true);
-    } else if (item.type === "task") {
-      router.push("/tarefas");
-    }
+    setDetailItem(item);
+    setDetailOpen(true);
   }
+
+  const detailEvent =
+    detailItem?.type === "event"
+      ? (cal.events.find((e) => e.id === detailItem.originalId) ?? null)
+      : null;
 
   const isMonth = cal.viewMode === "month";
 
@@ -86,6 +89,7 @@ export function CalendarPage() {
             monthItems={cal.monthItems}
             direction={cal.direction}
             onSelectDate={cal.selectDate}
+            onItemClick={handleItemClick}
           />
         ) : (
           <DayView
@@ -115,6 +119,22 @@ export function CalendarPage() {
         onCreate={cal.createEvent}
         onUpdate={cal.updateEvent}
         onDelete={cal.deleteEvent}
+      />
+
+      <CalendarItemModal
+        open={detailOpen}
+        item={detailItem}
+        event={detailEvent}
+        onClose={() => setDetailOpen(false)}
+        onEditEvent={(ev) => {
+          setDetailOpen(false);
+          setEditingEvent(ev);
+          setModalOpen(true);
+        }}
+        onOpenModule={(route) => {
+          setDetailOpen(false);
+          router.push(route);
+        }}
       />
     </div>
   );
