@@ -10,6 +10,9 @@ import {
   Flame,
   ArrowUpRight,
   ArrowDownRight,
+  NotebookPen,
+  Pin,
+  Share2,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useData } from "@/hooks/useData";
@@ -28,6 +31,7 @@ import {
   formatBRL,
   formatDate,
   pct,
+  relativeTime,
 } from "@/lib/utils";
 
 function greeting(hour: number): string {
@@ -125,6 +129,14 @@ export default function DashboardPage() {
   const wedTotal = weddingTasks.length;
   const wedCompleted = weddingTasks.filter((t) => t.status === "concluida").length;
   const wedPercentage = wedTotal > 0 ? Math.round((wedCompleted / wedTotal) * 100) : 0;
+
+  const recentNotes = useMemo(() => {
+    if (!user) return [];
+    return (data.notes || [])
+      .filter((n) => n.ownerId === user.id || n.isShared)
+      .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+      .slice(0, 3);
+  }, [data.notes, user]);
 
   if (!user) return null;
   const hour = new Date().getHours();
@@ -380,6 +392,63 @@ export default function DashboardPage() {
           </Card>
         </motion.div>
       </div>
+
+      {/* Notas Recentes */}
+      <motion.div variants={item}>
+        <Card>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <NotebookPen className="size-5 text-brand animate-pulse" />
+              <span>Notas recentes</span>
+            </CardTitle>
+            <Link href="/notas" className="text-sm font-semibold text-brand hover:underline">
+              Ver todas
+            </Link>
+          </CardHeader>
+          {recentNotes.length === 0 ? (
+            <EmptyState 
+              icon={NotebookPen} 
+              title="Sem notas recentes" 
+              description="Escreva ideias, lembretes ou tarefas rápidas no bloco de notas." 
+            />
+          ) : (
+            <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
+              {recentNotes.map((note) => {
+                const title = note.title?.trim() || note.content.trim().split("\n")[0] || "Sem título";
+                const displayTitle = title.length > 30 ? `${title.substring(0, 30)}...` : title;
+                const preview = note.content.trim().split("\n").slice(1).join("\n").trim() || note.content;
+                const displayPreview = preview.length > 60 ? `${preview.substring(0, 60)}...` : preview;
+
+                return (
+                  <Link
+                    key={note.id}
+                    href={`/notas?id=${note.id}`}
+                    className="flex flex-col justify-between rounded-card border border-line p-4 transition-all hover:scale-[1.01] hover:shadow-soft bg-surface/40 hover:bg-surface"
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between gap-1.5">
+                        <h4 className="text-sm font-extrabold text-content truncate max-w-[80%]">
+                          {displayTitle}
+                        </h4>
+                        <div className="flex items-center gap-1 shrink-0">
+                          {note.isPinned && <Pin className="size-3 rotate-45 text-brand fill-current" />}
+                          {note.isShared && <Share2 className="size-3 text-muted-foreground" />}
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted line-clamp-2 leading-relaxed">
+                        {displayPreview || <em className="opacity-50">Sem conteúdo adicional</em>}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-muted font-bold mt-4 block">
+                      {relativeTime(note.updatedAt)}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </Card>
+      </motion.div>
     </motion.div>
   );
 }

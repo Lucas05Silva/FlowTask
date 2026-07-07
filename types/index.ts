@@ -332,6 +332,18 @@ export interface TaskPrompt {
   updatedBy?: ID;
 }
 
+export interface Note {
+  id: string;
+  title?: string;
+  content: string;
+  color: "default" | "purple" | "cyan" | "amber" | "pink" | "green";
+  isPinned: boolean;
+  isShared: boolean;
+  ownerId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Top-level shape of the mock store persisted to localStorage. */
 export interface FlowTaskData {
   users: User[];
@@ -349,6 +361,7 @@ export interface FlowTaskData {
   userAchievements: UserAchievement[];
   notifications: AppNotification[];
   taskPrompts: TaskPrompt[];
+  notes: Note[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;

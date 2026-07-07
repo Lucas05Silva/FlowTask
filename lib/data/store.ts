@@ -19,7 +19,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 type CollKey =
   | "users" | "tasks" | "events" | "projects" | "finances" | "debts" | "goals"
   | "apartmentItems" | "weddingTasks" | "weddingBudget" | "weddingVendors"
-  | "userAchievements" | "notifications" | "taskPrompts";
+  | "userAchievements" | "notifications" | "taskPrompts" | "notes";
 
 /** FlowTaskData array field → Supabase table. */
 const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
@@ -37,6 +37,7 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "userAchievements", table: "user_achievements" },
   { key: "notifications", table: "notifications" },
   { key: "taskPrompts", table: "task_prompts" },
+  { key: "notes", table: "notes" },
 ];
 const WEDDING_CONFIG_TABLE = "wedding_config";
 

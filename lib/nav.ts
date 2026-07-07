@@ -9,6 +9,7 @@ import {
   Sofa,
   HeartHandshake,
   Bell,
+  NotebookPen,
 } from "lucide-react";
 
 export interface NavItem {
@@ -26,6 +27,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/projetos", label: "Projetos", icon: Briefcase, primaryMobile: true },
   { href: "/financeiro", label: "Financeiro", icon: Wallet, primaryMobile: true },
   { href: "/metas", label: "Metas", icon: Target },
+  { href: "/notas", label: "Notas", icon: NotebookPen },
   { href: "/apartamento", label: "Apê", icon: Sofa },
   { href: "/casamento", label: "Casamento", icon: HeartHandshake },
   { href: "/notificacoes", label: "Notificações", icon: Bell },

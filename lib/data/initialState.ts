@@ -57,6 +57,7 @@ export function emptyState(): FlowTaskData {
     userAchievements: [],
     notifications: [],
     taskPrompts: [],
+    notes: [],
     weddingDate: null,
     weddingVenueName: null,
     weddingVenueAddress: null,
