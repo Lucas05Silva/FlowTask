@@ -31,6 +31,7 @@ function buildGroups(tasks: Task[], view: ViewMode): Group[] {
     return STATUS_ORDER.map((s) => ({
       id: s,
       label: TASK_STATUS_META[s].label,
+      color: s === "fazendo" ? "var(--brand-purple)" : s === "concluida" ? "var(--success)" : "var(--text-secondary)",
       tasks: tasks.filter((t) => t.status === s).sort((a, b) => a.order - b.order),
     }));
   }

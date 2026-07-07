@@ -42,6 +42,7 @@ function emptyForm(): TaskFormData {
     recurrenceRule: "semanal",
     subtasks: [],
     goalId: null,
+    status: "a_fazer",
   };
 }
 
@@ -57,6 +58,7 @@ function fromTask(t: Task): TaskFormData {
     recurrenceRule: t.recurrenceRule ?? "semanal",
     subtasks: t.subtasks,
     goalId: t.goalId,
+    status: t.status,
   };
 }
 
@@ -190,6 +192,21 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
           {!isEdit && form.assignee === "ambos" && (
             <p className="mt-1 text-xs text-muted">Será criada uma tarefa para cada um. 👫</p>
           )}
+        </div>
+
+        <div>
+          <Label>Status</Label>
+          <div className="flex flex-wrap gap-2">
+            <ChipToggle active={form.status === "a_fazer"} color="var(--text-secondary)" onClick={() => patch({ status: "a_fazer" })}>
+              A fazer
+            </ChipToggle>
+            <ChipToggle active={form.status === "fazendo"} color="var(--brand-purple)" onClick={() => patch({ status: "fazendo" })}>
+              Fazendo
+            </ChipToggle>
+            <ChipToggle active={form.status === "concluida"} color="var(--success)" onClick={() => patch({ status: "concluida" })}>
+              Concluída
+            </ChipToggle>
+          </div>
         </div>
 
         <div>

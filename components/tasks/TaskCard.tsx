@@ -4,11 +4,13 @@ import { motion } from "framer-motion";
 import { Repeat, CalendarDays, ListTree, Braces } from "lucide-react";
 import type { Task } from "@/types";
 import { useData } from "@/hooks/useData";
+import { useTasks } from "@/hooks/useTasks";
 import { Badge } from "@/components/ui/Badge";
 import { Avatar } from "@/components/ui/Avatar";
 import { CATEGORY_META, PRIORITY_META } from "@/lib/constants";
 import { countdownLabel, daysUntil, cn } from "@/lib/utils";
 import type { TaskModalTab } from "./TaskModal";
+import { StatusBadge } from "./StatusBadge";
 
 interface TaskCardProps {
   task: Task;
@@ -18,6 +20,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
   const data = useData();
+  const { setStatus } = useTasks();
   const done = task.status === "concluida";
   const cat = CATEGORY_META[task.category];
   const prio = PRIORITY_META[task.priority];
@@ -53,14 +56,17 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
           role="checkbox"
           aria-checked={done}
           aria-label={done ? "Tarefa concluída" : `Concluir ${task.title}`}
-          disabled={done}
           onClick={(e) => {
             e.stopPropagation();
-            if (!done) onComplete(task);
+            if (done) {
+              setStatus(task.id, "a_fazer");
+            } else {
+              onComplete(task);
+            }
           }}
           className={cn(
             "mt-0.5 grid size-6 shrink-0 place-items-center rounded-full border-2 transition-colors",
-            done ? "border-success bg-success text-white" : "border-line text-transparent hover:border-brand",
+            done ? "border-success bg-success text-white animate-pulse" : "border-line text-transparent hover:border-brand",
           )}
         >
           <motion.svg
@@ -92,6 +98,10 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
           )}
 
           <div className="mt-2.5 flex flex-wrap items-center gap-2">
+            <StatusBadge
+              status={task.status}
+              onChange={(newStatus) => setStatus(task.id, newStatus)}
+            />
             <Badge color={prio.color}>{prio.label}</Badge>
             <Badge color={cat.color} variant="soft">
               <span className="size-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
