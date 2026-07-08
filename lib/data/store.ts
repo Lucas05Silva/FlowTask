@@ -205,24 +205,46 @@ export function updateData(updater: (data: FlowTaskData) => FlowTaskData): void 
 async function fetchAll(): Promise<FlowTaskData> {
   const sb = getSupabase();
   const next = emptyState();
-  const results = await Promise.all(COLLECTIONS.map((c) => sb.from(c.table).select("*")));
-  results.forEach((res, i) => {
-    const c = COLLECTIONS[i];
+  
+  const results = await Promise.all(
+    COLLECTIONS.map(async (c) => {
+      try {
+        const res = await sb.from(c.table).select("*");
+        return { key: c.key, table: c.table, data: res.data, error: res.error };
+      } catch (e) {
+        return {
+          key: c.key,
+          table: c.table,
+          data: [],
+          error: e instanceof Error ? e : new Error(String(e)),
+        };
+      }
+    })
+  );
+
+  results.forEach((res) => {
     if (res.error) {
-      throw new Error(`${c.table}: ${res.error.message}`);
+      console.warn(`[store] Falha ao carregar tabela ${res.table}:`, res.error.message);
+      (next as unknown as Record<string, unknown>)[res.key] = [];
+    } else {
+      (next as unknown as Record<string, unknown>)[res.key] = (res.data ?? []).map((r) =>
+        entityFromRow(r as Row)
+      );
     }
-    (next as unknown as Record<string, unknown>)[c.key] = (res.data ?? []).map((r) =>
-      entityFromRow(r as Row),
-    );
   });
+
   next.achievements = ACHIEVEMENTS;
   if (!next.users || next.users.length === 0) next.users = emptyState().users;
 
-  const cfg = await sb.from(WEDDING_CONFIG_TABLE).select("*").eq("id", "shared").maybeSingle();
-  if (cfg.data) {
-    next.weddingDate = (cfg.data as Row).wedding_date as string | null;
-    next.weddingVenueName = (cfg.data as Row).wedding_venue_name as string | null;
-    next.weddingVenueAddress = (cfg.data as Row).wedding_venue_address as string | null;
+  try {
+    const cfg = await sb.from(WEDDING_CONFIG_TABLE).select("*").eq("id", "shared").maybeSingle();
+    if (cfg && cfg.data) {
+      next.weddingDate = (cfg.data as Row).wedding_date as string | null;
+      next.weddingVenueName = (cfg.data as Row).wedding_venue_name as string | null;
+      next.weddingVenueAddress = (cfg.data as Row).wedding_venue_address as string | null;
+    }
+  } catch (e) {
+    console.warn("[store] Falha ao carregar wedding_config:", e);
   }
   return next;
 }
