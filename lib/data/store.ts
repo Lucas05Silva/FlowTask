@@ -66,7 +66,8 @@ let hydrated = false;
 let hydrating = false;
 let hydrateError: string | null = null;
 let channel: RealtimeChannel | null = null;
-let suppressRealtimeUntil = 0;
+const recentLocalWrites = new Map<string, number>();
+let suppressAllRealtimeUntil = 0;
 let refreshTimer: ReturnType<typeof setTimeout> | null = null;
 
 const listeners = new Set<() => void>();
@@ -108,17 +109,27 @@ function diffCollection(
   next: Entity[],
   noDelete: boolean,
 ): void {
+  // Periodic cleanup of recentLocalWrites
+  const now = Date.now();
+  for (const [id, time] of recentLocalWrites.entries()) {
+    if (time < now) recentLocalWrites.delete(id);
+  }
+
   const prevById = new Map(prev.map((x) => [x.id, x]));
   const nextById = new Map(next.map((x) => [x.id, x]));
   for (const [id, item] of nextById) {
     const p = prevById.get(id);
     if (!p || JSON.stringify(p) !== JSON.stringify(item)) {
       queue.push({ kind: "upsert", table, row: rowFromEntity(item) });
+      recentLocalWrites.set(id, Date.now() + 2500);
     }
   }
   if (!noDelete) {
     for (const id of prevById.keys()) {
-      if (!nextById.has(id)) queue.push({ kind: "delete", table, id });
+      if (!nextById.has(id)) {
+        queue.push({ kind: "delete", table, id });
+        recentLocalWrites.set(id, Date.now() + 2500);
+      }
     }
   }
 }
@@ -145,6 +156,7 @@ function enqueueDiff(prev: FlowTaskData, next: FlowTaskData): void {
         wedding_venue_address: next.weddingVenueAddress ?? null,
       },
     });
+    recentLocalWrites.set("shared", Date.now() + 2500);
   }
   scheduleFlush();
 }
@@ -160,7 +172,6 @@ async function flush(): Promise<void> {
   const ops = queue;
   queue = [];
   const sb = getSupabase();
-  suppressRealtimeUntil = Date.now() + 2000;
 
   // Batch upserts per table.
   const upsertsByTable = new Map<string, Row[]>();
@@ -188,7 +199,6 @@ async function flush(): Promise<void> {
   } catch (e) {
     console.warn("[store] flush error:", e);
   }
-  suppressRealtimeUntil = Date.now() + 2000;
 }
 
 export function updateData(updater: (data: FlowTaskData) => FlowTaskData): void {
@@ -253,18 +263,104 @@ function subscribeRealtime(): void {
   if (!supabaseConfigured || channel) return;
   const sb = getSupabase();
 
-  const onRemoteChange = () => {
-    // Ignore the echo of our own recent writes.
-    if (Date.now() < suppressRealtimeUntil) return;
-    if (refreshTimer) clearTimeout(refreshTimer);
-    refreshTimer = setTimeout(async () => {
-      try {
-        cache = await fetchAll();
-        emit();
-      } catch (e) {
-        console.warn("[store] realtime refresh failed:", e);
+  const onRemoteChange = (payload: any) => {
+    // If a global reset or bulk operation suppressed all realtime updates
+    if (Date.now() < suppressAllRealtimeUntil) return;
+
+    const { eventType, table, new: newRow, old: oldRow } = payload;
+
+    // Check per-record suppression first
+    const id = newRow?.id || oldRow?.id;
+    if (id) {
+      const suppressUntil = recentLocalWrites.get(id);
+      if (suppressUntil && Date.now() < suppressUntil) {
+        return; // Ignore our own echo
       }
-    }, 400);
+    }
+
+    if (table === WEDDING_CONFIG_TABLE) {
+      if (eventType === "DELETE") {
+        cache = {
+          ...cache,
+          weddingDate: null,
+          weddingVenueName: null,
+          weddingVenueAddress: null,
+        };
+      } else {
+        const nextWeddingDate = newRow.wedding_date ?? null;
+        const nextWeddingVenueName = newRow.wedding_venue_name ?? null;
+        const nextWeddingVenueAddress = newRow.wedding_venue_address ?? null;
+        if (
+          cache.weddingDate === nextWeddingDate &&
+          cache.weddingVenueName === nextWeddingVenueName &&
+          cache.weddingVenueAddress === nextWeddingVenueAddress
+        ) {
+          return;
+        }
+        cache = {
+          ...cache,
+          weddingDate: nextWeddingDate,
+          weddingVenueName: nextWeddingVenueName,
+          weddingVenueAddress: nextWeddingVenueAddress,
+        };
+      }
+      emit();
+      return;
+    }
+
+    const coll = COLLECTIONS.find((c) => c.table === table);
+    if (!coll) return;
+
+    const key = coll.key;
+    const currentArray = (cache[key] as unknown as Entity[]) ?? [];
+
+    if (eventType === "DELETE") {
+      if (id) {
+        const exists = currentArray.some((x) => x.id === id);
+        if (!exists) return;
+        cache = {
+          ...cache,
+          [key]: currentArray.filter((x) => x.id !== id),
+        };
+        emit();
+      }
+    } else if (eventType === "INSERT") {
+      const entity = entityFromRow(newRow);
+      const exists = currentArray.some((x) => x.id === entity.id);
+      if (!exists) {
+        cache = {
+          ...cache,
+          [key]: [...currentArray, entity],
+        };
+        emit();
+      } else {
+        const existing = currentArray.find((x) => x.id === entity.id);
+        if (JSON.stringify(existing) === JSON.stringify(entity)) return;
+        cache = {
+          ...cache,
+          [key]: currentArray.map((x) => (x.id === entity.id ? entity : x)),
+        };
+        emit();
+      }
+    } else if (eventType === "UPDATE") {
+      const entity = entityFromRow(newRow);
+      const existing = currentArray.find((x) => x.id === entity.id);
+      if (existing && JSON.stringify(existing) === JSON.stringify(entity)) {
+        return;
+      }
+      if (existing) {
+        cache = {
+          ...cache,
+          [key]: currentArray.map((x) => (x.id === entity.id ? entity : x)),
+        };
+      } else {
+        cache = {
+          ...cache,
+          [key]: [...currentArray, entity],
+        };
+      }
+      emit();
+    }
   };
 
   // Subscribe per table (reliable delivery across supabase-js versions).
@@ -313,6 +409,8 @@ export function teardownData(): void {
   if (flushTimer) clearTimeout(flushTimer);
   if (refreshTimer) clearTimeout(refreshTimer);
   queue = [];
+  recentLocalWrites.clear();
+  suppressAllRealtimeUntil = 0;
   hydrated = false;
   hydrateError = null;
   cache = emptyState();
@@ -327,7 +425,7 @@ export async function resetData(): Promise<void> {
     return;
   }
   const sb = getSupabase();
-  suppressRealtimeUntil = Date.now() + 4000;
+  suppressAllRealtimeUntil = Date.now() + 4000;
   try {
     for (const c of COLLECTIONS) {
       if (c.key === "users") continue;
