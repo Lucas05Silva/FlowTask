@@ -16,15 +16,13 @@ CREATE TABLE IF NOT EXISTS public.notes (
 -- RLS
 ALTER TABLE public.notes ENABLE ROW LEVEL SECURITY;
 
--- Select policy: Owner can read, anyone can read if is_shared is TRUE
+-- Select policy: Anyone authenticated can read all notes
 DROP POLICY IF EXISTS "Users can read own and shared notes" ON public.notes;
-CREATE POLICY "Users can read own and shared notes"
+DROP POLICY IF EXISTS "Users can read all notes" ON public.notes;
+CREATE POLICY "Users can read all notes"
 ON public.notes FOR SELECT
 TO authenticated
-USING (
-  auth.uid() = owner_id 
-  OR is_shared = TRUE
-);
+USING (true);
 
 -- Insert policy: Only owner can insert their own notes
 DROP POLICY IF EXISTS "Users can insert own notes" ON public.notes;

@@ -8,6 +8,17 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { updateData } from "@/lib/data/store";
 import { uid } from "@/lib/utils";
 
+function generateUUID(): string {
+  if (typeof crypto !== "undefined" && crypto.randomUUID) {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 export function useNotes() {
   const data = useData();
   const { user } = useAuth();
@@ -31,11 +42,10 @@ export function useNotes() {
     [router, searchParams]
   );
 
-  // Retrieve notes: own notes + shared notes from anyone
+  // Retrieve notes: all notes
   const notes = useMemo(() => {
     if (!userId) return [];
     return (data.notes || [])
-      .filter((n) => n.ownerId === userId || n.isShared)
       .sort((a, b) => {
         // Pinned notes first
         if (a.isPinned && !b.isPinned) return -1;
@@ -56,7 +66,7 @@ export function useNotes() {
     if (!userId) return null;
 
     const newNote: Note = {
-      id: uid("note"),
+      id: generateUUID(),
       title: "",
       content: "",
       color: "default",
