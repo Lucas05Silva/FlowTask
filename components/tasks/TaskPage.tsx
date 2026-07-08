@@ -84,6 +84,7 @@ export function TaskPage() {
       recurrenceRule: form.isRecurring ? form.recurrenceRule : null,
       subtasks: form.subtasks,
       goalId: form.goalId,
+      status: form.status,
     });
   }
 

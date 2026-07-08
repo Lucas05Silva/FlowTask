@@ -114,13 +114,13 @@ export function useTasks() {
 
         const nowIso = new Date().toISOString();
 
-        // 1. Update task list status and completedAt (retain if already set)
+        // 1. Update task list status and completedAt (retain if already set, reset to null if not completed)
         let tasks = d.tasks.map((t) => {
           if (t.id === id) {
             return {
               ...t,
               status: newStatus,
-              completedAt: newStatus === "concluida" ? (t.completedAt || nowIso) : t.completedAt,
+              completedAt: newStatus === "concluida" ? (t.completedAt || nowIso) : null,
             };
           }
           return t;
@@ -163,89 +163,89 @@ export function useTasks() {
           }
         }
 
-        // 3. Award XP ONLY if completed for the FIRST time
+        // 3. Award XP ONLY if completed for the FIRST time and user profile exists
         if (newStatus === "concluida" && !task.completedAt) {
           const today = todayISO();
           const users = d.users.map((u) => ({ ...u }));
           const me = users.find((u) => u.id === userId);
-          if (!me) return d;
+          if (me) {
+            const xpBefore = me.xp;
+            const levelBefore = levelFromXp(xpBefore).level;
+            let bonus = 0;
 
-          const xpBefore = me.xp;
-          const levelBefore = levelFromXp(xpBefore).level;
-          let bonus = 0;
-
-          if (me.streakLastDate !== today) {
-            me.streakCount = me.streakLastDate === yesterdayISO() ? me.streakCount + 1 : 1;
-            me.streakRecord = Math.max(me.streakRecord || 0, me.streakCount);
-            me.streakLastDate = today;
-            if (me.streakCount === 7) bonus += XP.streak7;
-            if (me.streakCount === 30) bonus += XP.streak30;
-          }
-
-          // Cumulate Task XP + Streak bonus + Goal XP (if completed directly)
-          let totalXpGained = task.xpReward + bonus;
-          if (completedGoalDirectly) {
-            totalXpGained += completedGoalDirectly.xpReward;
-          }
-          me.xp += totalXpGained;
-
-          // Evaluate Achievements
-          const snapshot: FlowTaskData = { ...d, tasks, users, goals };
-          const unlockedIds = evaluateAchievements(snapshot, userId);
-
-          // Specific Goal completed achievement (e.g. ach_saver if financial type goal is completed)
-          if (completedGoalDirectly && completedGoalDirectly.type === "financeira") {
-            if (!unlockedIds.includes("ach_saver")) {
-              unlockedIds.push("ach_saver");
+            if (me.streakLastDate !== today) {
+              me.streakCount = me.streakLastDate === yesterdayISO() ? me.streakCount + 1 : 1;
+              me.streakRecord = Math.max(me.streakRecord || 0, me.streakCount);
+              me.streakLastDate = today;
+              if (me.streakCount === 7) bonus += XP.streak7;
+              if (me.streakCount === 30) bonus += XP.streak30;
             }
+
+            // Cumulate Task XP + Streak bonus + Goal XP (if completed directly)
+            let totalXpGained = task.xpReward + bonus;
+            if (completedGoalDirectly) {
+              totalXpGained += completedGoalDirectly.xpReward;
+            }
+            me.xp += totalXpGained;
+
+            // Evaluate Achievements
+            const snapshot: FlowTaskData = { ...d, tasks, users, goals };
+            const unlockedIds = evaluateAchievements(snapshot, userId);
+
+            // Specific Goal completed achievement (e.g. ach_saver if financial type goal is completed)
+            if (completedGoalDirectly && completedGoalDirectly.type === "financeira") {
+              if (!unlockedIds.includes("ach_saver")) {
+                unlockedIds.push("ach_saver");
+              }
+            }
+
+            let userAchievements = d.userAchievements;
+            const unlocked: Achievement[] = [];
+            for (const aid of unlockedIds) {
+              const alreadyUnlocked = d.userAchievements.some((ua) => ua.userId === userId && ua.achievementId === aid);
+              if (alreadyUnlocked) continue;
+
+              const ach = d.achievements.find((a) => a.id === aid);
+              if (!ach) continue;
+              userAchievements = [...userAchievements, { id: uid("ua"), userId, achievementId: aid, unlockedAt: nowIso }];
+              me.xp += ach.xpReward;
+              totalXpGained += ach.xpReward;
+              unlocked.push(ach);
+            }
+
+            const after = levelFromXp(me.xp);
+            me.level = after.level;
+
+            result = {
+              xpGained: totalXpGained,
+              leveledUp: after.level > levelBefore,
+              newLevel: after.level,
+              newTitle: after.title,
+              achievements: unlocked,
+              streakCount: me.streakCount,
+              completedGoal: completedGoalDirectly ?? undefined,
+              goalProgress: goalProgressInfo ?? undefined,
+            };
+
+            // 4. Recurrence -> spawn next occurrence
+            if (task.isRecurring) {
+              tasks = [
+                ...tasks,
+                {
+                  ...task,
+                  id: uid("t"),
+                  status: "a_fazer",
+                  completedAt: null,
+                  dueDate: nextRecurrence(task.dueDate, task.recurrenceRule),
+                  subtasks: task.subtasks.map((s) => ({ ...s, id: uid("s"), done: false })),
+                  order: tasks.reduce((m, t) => Math.max(m, t.order), 0) + 1,
+                  createdAt: nowIso,
+                },
+              ];
+            }
+
+            return { ...d, tasks, users, goals, userAchievements };
           }
-
-          let userAchievements = d.userAchievements;
-          const unlocked: Achievement[] = [];
-          for (const aid of unlockedIds) {
-            const alreadyUnlocked = d.userAchievements.some((ua) => ua.userId === userId && ua.achievementId === aid);
-            if (alreadyUnlocked) continue;
-
-            const ach = d.achievements.find((a) => a.id === aid);
-            if (!ach) continue;
-            userAchievements = [...userAchievements, { id: uid("ua"), userId, achievementId: aid, unlockedAt: nowIso }];
-            me.xp += ach.xpReward;
-            totalXpGained += ach.xpReward;
-            unlocked.push(ach);
-          }
-
-          const after = levelFromXp(me.xp);
-          me.level = after.level;
-
-          result = {
-            xpGained: totalXpGained,
-            leveledUp: after.level > levelBefore,
-            newLevel: after.level,
-            newTitle: after.title,
-            achievements: unlocked,
-            streakCount: me.streakCount,
-            completedGoal: completedGoalDirectly ?? undefined,
-            goalProgress: goalProgressInfo ?? undefined,
-          };
-
-          // 4. Recurrence -> spawn next occurrence
-          if (task.isRecurring) {
-            tasks = [
-              ...tasks,
-              {
-                ...task,
-                id: uid("t"),
-                status: "a_fazer",
-                completedAt: null,
-                dueDate: nextRecurrence(task.dueDate, task.recurrenceRule),
-                subtasks: task.subtasks.map((s) => ({ ...s, id: uid("s"), done: false })),
-                order: tasks.reduce((m, t) => Math.max(m, t.order), 0) + 1,
-                createdAt: nowIso,
-              },
-            ];
-          }
-
-          return { ...d, tasks, users, goals, userAchievements };
         }
 
         // If goal progress changed but task was already completed once (no new XP)
@@ -300,9 +300,12 @@ export function useTasks() {
   /** Complete task helper for checkbox clicks (with confetti trigger). */
   const completeTask = useCallback(
     (id: string): CelebrationResult | null => {
-      return updateTaskStatus(id, "concluida");
+      const task = data.tasks.find((t) => t.id === id);
+      if (!task) return null;
+      const nextStatus: TaskStatus = task.status === "concluida" ? "a_fazer" : "concluida";
+      return updateTaskStatus(id, nextStatus);
     },
-    [updateTaskStatus],
+    [data.tasks, updateTaskStatus],
   );
 
   return {
