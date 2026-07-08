@@ -41,7 +41,10 @@ export function AvatarUpload() {
       setPulse(true);
       setTimeout(() => setPulse(false), 320);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : "Falha no upload da foto.";
+      let msg = e instanceof Error ? e.message : "Falha no upload da foto.";
+      if (msg.toLowerCase().includes("bucket not found")) {
+        msg = "O bucket 'avatars' não existe. Crie-o como Público no painel da Supabase.";
+      }
       setError(msg);
     } finally {
       setUploading(false);
