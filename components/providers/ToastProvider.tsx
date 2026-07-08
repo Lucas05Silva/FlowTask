@@ -89,7 +89,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                     {item.title}
                   </p>
                   {item.description && (
-                    <p className="text-xs text-muted font-bold leading-normal mt-0.5">
+                    <p className="text-xs text-muted font-bold leading-normal mt-0.5 whitespace-pre-line">
                       {item.description}
                     </p>
                   )}
@@ -125,7 +125,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-content">{item.title}</p>
-                  {item.description && <p className="text-xs text-muted">{item.description}</p>}
+                  {item.description && <p className="text-xs text-muted whitespace-pre-line">{item.description}</p>}
                 </div>
               </motion.div>
             );

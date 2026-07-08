@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Plus, Trash2, HelpCircle, ArrowRight, AlertCircle, Trophy } from "lucide-react";
-import type { Goal, GoalType, GoalCheckItem } from "@/types";
+import type { Goal, GoalType, GoalCheckItem, GoalContributionType } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Textarea, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -37,6 +37,8 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
   const [targetAmount, setTargetAmount] = useState<number>(1);
   const [currentAmount, setCurrentAmount] = useState<number>(0);
   const [unit, setUnit] = useState("");
+  const [contributionType, setContributionType] = useState<GoalContributionType>("count");
+  const [contributionValuePerTask, setContributionValuePerTask] = useState<number>(1);
   
   // Checklist building
   const [checklist, setChecklist] = useState<GoalCheckItem[]>([]);
@@ -64,6 +66,8 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
         setChecklist(goal.checklist || []);
         setDeadline(goal.deadline ? goal.deadline.slice(0, 10) : "");
         setXpReward(goal.xpReward);
+        setContributionType(goal.contributionType || "count");
+        setContributionValuePerTask(goal.contributionValuePerTask || 1);
       } else {
         setTitle("");
         setDescription("");
@@ -76,6 +80,8 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
         setNewCheckItemText("");
         setDeadline("");
         setXpReward(DEFAULT_XP_MAP.pessoal);
+        setContributionType("count");
+        setContributionValuePerTask(1);
       }
     }
   }, [goal, open]);
@@ -119,6 +125,8 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
       xpReward,
       category: null,
       linkedModule: type !== "pessoal" ? type : null,
+      contributionType: progressMode === "checklist" ? "checklist" : contributionType,
+      contributionValuePerTask: progressMode === "checklist" ? undefined : (contributionType === "value" ? contributionValuePerTask : undefined),
     };
 
     if (progressMode === "checklist") {
@@ -306,6 +314,42 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
                     placeholder="Ex: treinos, km"
                   />
                 </div>
+              </div>
+            )}
+
+            {progressMode === "numerical" && (
+              <div className="grid gap-3 grid-cols-2 mt-3 p-3.5 rounded-card border border-line bg-panel/20 animate-in fade-in duration-150">
+                <div className="col-span-2">
+                  <Label htmlFor="g-contrib">Como as tarefas contribuem para esta meta?</Label>
+                  <Select
+                    id="g-contrib"
+                    value={contributionType}
+                    onChange={(e) => setContributionType(e.target.value as GoalContributionType)}
+                  >
+                    <option value="count">Cada tarefa concluída soma +1 na meta</option>
+                    <option value="value">Cada tarefa contribui com um valor personalizado</option>
+                  </Select>
+                </div>
+                {contributionType === "value" && (
+                  <div className="col-span-2 grid grid-cols-2 gap-3 mt-1.5 animate-in slide-in-from-top-1 duration-150">
+                    <div>
+                      <Label htmlFor="g-contrib-val">Valor padrão por tarefa</Label>
+                      <Input
+                        id="g-contrib-val"
+                        type="number"
+                        min={0}
+                        value={contributionValuePerTask}
+                        onChange={(e) => setContributionValuePerTask(Number(e.target.value) || 0)}
+                      />
+                    </div>
+                    <div>
+                      <Label>Unidade de contribuição</Label>
+                      <div className="h-9 flex items-center px-1.5 text-xs text-muted-foreground font-bold">
+                        {unit || "unidades"}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 

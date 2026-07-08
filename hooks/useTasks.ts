@@ -11,6 +11,7 @@ import type {
   TaskStatus,
   FlowTaskData,
   Achievement,
+  GoalContributionType,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
@@ -24,6 +25,7 @@ import {
   type CelebrationResult,
 } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
+import { computeTaskGoalContribution, computeGoalProgressRecalculation } from "@/lib/goal-progress";
 
 export interface TaskFormData {
   title: string;
@@ -37,6 +39,8 @@ export interface TaskFormData {
   subtasks: Subtask[];
   goalId: string | null;
   status: TaskStatus;
+  goalContributionType?: GoalContributionType;
+  goalContributionValue?: number;
 }
 
 function yesterdayISO(): string {
@@ -61,6 +65,8 @@ function buildTask(form: TaskFormData, assignee: Assignee, order: number, userId
     recurrenceRule: form.isRecurring ? form.recurrenceRule : null,
     parentTaskId: null,
     goalId: form.goalId,
+    goalContributionType: form.goalContributionType,
+    goalContributionValue: form.goalContributionValue,
     xpReward: taskXp(form.priority),
     order,
     createdBy: userId,
@@ -120,23 +126,41 @@ export function useTasks() {
           return t;
         });
 
-        // 2. Recalculate linked goal progress
-        let goals = d.goals;
-        if (newStatus === "concluida" && task.goalId) {
-          goals = goals.map((g) => {
-            if (g.id !== task.goalId) return g;
-            if (task.status !== "concluida") {
-              const next = Math.min(g.targetAmount, g.currentAmount + 1);
-              return { ...g, currentAmount: next, status: next >= g.targetAmount ? "concluida" : g.status };
+        // 2. Compute Linked Goal Progress
+        let goals = d.goals.map((g) => ({ ...g }));
+        let completedGoalDirectly: any = null;
+        let goalProgressInfo: any = null;
+
+        if (task.goalId) {
+          const targetGoal = goals.find((g) => g.id === task.goalId);
+          if (targetGoal) {
+            if (newStatus === "concluida" && targetGoal.status !== "concluida") {
+              const allTasksOfGoal = d.tasks.filter((t) => t.goalId === task.goalId);
+              const progress = computeTaskGoalContribution(task, targetGoal, allTasksOfGoal);
+
+              if (progress.shouldComplete) {
+                targetGoal.currentAmount = progress.newValue;
+                targetGoal.status = "concluida";
+                targetGoal.completedAt = nowIso;
+                completedGoalDirectly = { ...targetGoal };
+              } else {
+                goalProgressInfo = {
+                  goal: { ...targetGoal },
+                  previousValue: targetGoal.currentAmount,
+                  newValue: progress.newValue,
+                };
+                targetGoal.currentAmount = progress.newValue;
+              }
+            } else if (task.status === "concluida" && newStatus !== "concluida") {
+              // Reopening task: recalculate progress of the goal from scratch
+              const allTasksOfGoal = tasks.filter((t) => t.goalId === task.goalId);
+              const progress = computeGoalProgressRecalculation(targetGoal, allTasksOfGoal);
+
+              targetGoal.currentAmount = progress.newValue;
+              targetGoal.status = progress.shouldComplete ? "concluida" : "em_andamento";
+              targetGoal.completedAt = progress.shouldComplete ? targetGoal.completedAt : null;
             }
-            return g;
-          });
-        } else if (task.status === "concluida" && newStatus !== "concluida" && task.goalId) {
-          goals = goals.map((g) => {
-            if (g.id !== task.goalId) return g;
-            const next = Math.max(0, g.currentAmount - 1);
-            return { ...g, currentAmount: next, status: next >= g.targetAmount ? "concluida" : "em_andamento" };
-          });
+          }
         }
 
         // 3. Award XP ONLY if completed for the FIRST time
@@ -157,17 +181,36 @@ export function useTasks() {
             if (me.streakCount === 7) bonus += XP.streak7;
             if (me.streakCount === 30) bonus += XP.streak30;
           }
-          me.xp += task.xpReward + bonus;
 
+          // Cumulate Task XP + Streak bonus + Goal XP (if completed directly)
+          let totalXpGained = task.xpReward + bonus;
+          if (completedGoalDirectly) {
+            totalXpGained += completedGoalDirectly.xpReward;
+          }
+          me.xp += totalXpGained;
+
+          // Evaluate Achievements
           const snapshot: FlowTaskData = { ...d, tasks, users, goals };
           const unlockedIds = evaluateAchievements(snapshot, userId);
+
+          // Specific Goal completed achievement (e.g. ach_saver if financial type goal is completed)
+          if (completedGoalDirectly && completedGoalDirectly.type === "financeira") {
+            if (!unlockedIds.includes("ach_saver")) {
+              unlockedIds.push("ach_saver");
+            }
+          }
+
           let userAchievements = d.userAchievements;
           const unlocked: Achievement[] = [];
           for (const aid of unlockedIds) {
+            const alreadyUnlocked = d.userAchievements.some((ua) => ua.userId === userId && ua.achievementId === aid);
+            if (alreadyUnlocked) continue;
+
             const ach = d.achievements.find((a) => a.id === aid);
             if (!ach) continue;
             userAchievements = [...userAchievements, { id: uid("ua"), userId, achievementId: aid, unlockedAt: nowIso }];
             me.xp += ach.xpReward;
+            totalXpGained += ach.xpReward;
             unlocked.push(ach);
           }
 
@@ -175,12 +218,14 @@ export function useTasks() {
           me.level = after.level;
 
           result = {
-            xpGained: me.xp - xpBefore,
+            xpGained: totalXpGained,
             leveledUp: after.level > levelBefore,
             newLevel: after.level,
             newTitle: after.title,
             achievements: unlocked,
             streakCount: me.streakCount,
+            completedGoal: completedGoalDirectly ?? undefined,
+            goalProgress: goalProgressInfo ?? undefined,
           };
 
           // 4. Recurrence -> spawn next occurrence
@@ -201,6 +246,20 @@ export function useTasks() {
           }
 
           return { ...d, tasks, users, goals, userAchievements };
+        }
+
+        // If goal progress changed but task was already completed once (no new XP)
+        if (completedGoalDirectly || goalProgressInfo) {
+          result = {
+            xpGained: 0,
+            leveledUp: false,
+            newLevel: 0,
+            newTitle: "",
+            achievements: [],
+            streakCount: 0,
+            completedGoal: completedGoalDirectly ?? undefined,
+            goalProgress: goalProgressInfo ?? undefined,
+          };
         }
 
         return { ...d, tasks, goals };

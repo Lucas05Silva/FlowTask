@@ -1,12 +1,13 @@
 "use client";
 
 import { useCallback } from "react";
-import type { Goal, GoalType, GoalCheckItem, GoalStatus, FlowTaskData, Achievement } from "@/types";
+import type { Goal, GoalType, GoalCheckItem, GoalStatus, FlowTaskData, Achievement, GoalContributionType } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { levelFromXp, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
+import { computeGoalProgressRecalculation } from "@/lib/goal-progress";
 
 export interface GoalFormData {
   title: string;
@@ -20,6 +21,8 @@ export interface GoalFormData {
   category: string | null;
   linkedModule: string | null;
   xpReward: number;
+  contributionType: GoalContributionType;
+  contributionValuePerTask?: number;
 }
 
 export function useGoals() {
@@ -120,6 +123,8 @@ export function useGoals() {
           createdBy: userId,
           createdAt: new Date().toISOString(),
           completedAt: isDone ? new Date().toISOString() : null,
+          contributionType: form.contributionType || "count",
+          contributionValuePerTask: form.contributionValuePerTask,
         };
 
         const withGoal = { ...d, goals: [...d.goals, newGoal] };
@@ -287,6 +292,45 @@ export function useGoals() {
     [userId, rewardUser]
   );
 
+  const getGoalById = useCallback(
+    (id: string) => {
+      return goals.find((g) => g.id === id) ?? null;
+    },
+    [goals]
+  );
+
+  const getLinkedTasks = useCallback(
+    (goalId: string) => {
+      return data.tasks.filter((t) => t.goalId === goalId);
+    },
+    [data.tasks]
+  );
+
+  const recalculateGoalProgress = useCallback(
+    (goalId: string) => {
+      const targetGoal = goals.find((g) => g.id === goalId);
+      if (!targetGoal) return;
+
+      const linkedTasks = data.tasks.filter((t) => t.goalId === goalId);
+      const { newValue, shouldComplete } = computeGoalProgressRecalculation(targetGoal, linkedTasks);
+
+      updateData((d) => ({
+        ...d,
+        goals: d.goals.map((g) =>
+          g.id === goalId
+            ? {
+                ...g,
+                currentAmount: newValue,
+                status: (shouldComplete ? "concluida" : "em_andamento") as GoalStatus,
+                completedAt: shouldComplete ? (g.completedAt || new Date().toISOString()) : null,
+              }
+            : g
+        ),
+      }));
+    },
+    [goals, data.tasks]
+  );
+
   return {
     goals,
     createGoal,
@@ -295,5 +339,8 @@ export function useGoals() {
     completeGoal,
     updateProgress,
     toggleCheckItem,
+    getGoalById,
+    getLinkedTasks,
+    recalculateGoalProgress,
   };
 }

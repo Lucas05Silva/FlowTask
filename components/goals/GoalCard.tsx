@@ -4,10 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DollarSign, Briefcase, User, Home, Heart, Calendar, Trophy, CheckSquare, Plus, Edit3, ArrowRight } from "lucide-react";
 import type { Goal } from "@/types";
+import { useData } from "@/hooks/useData";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
+import { Avatar } from "@/components/ui/Avatar";
 import { GoalProgress } from "./GoalProgress";
 import { formatBRL, pct, countdownLabel, daysUntil } from "@/lib/utils";
 import { cn } from "@/lib/utils";
@@ -38,8 +40,11 @@ export function GoalCard({
   onCelebrate,
 }: GoalCardProps) {
   const router = useRouter();
+  const data = useData();
   const [expanded, setExpanded] = useState(false);
   const [inputVal, setInputVal] = useState<string>(String(goal.currentAmount));
+
+  const linkedTasks = data.tasks.filter((t) => t.goalId === goal.id);
 
   const isFinancial = goal.type === "financeira";
   const hasChecklist = goal.checklist && goal.checklist.length > 0;
@@ -234,6 +239,62 @@ export function GoalCard({
               </Button>
             </div>
           )}
+
+          {/* Tarefas Vinculadas */}
+          <div className="space-y-2 border-t border-line/45 pt-3.5">
+            <div className="flex justify-between items-center text-xs font-bold text-content">
+              <span>Tarefas vinculadas ({linkedTasks.filter((t) => t.status === "concluida").length}/{linkedTasks.length} concluídas)</span>
+            </div>
+            {linkedTasks.length === 0 ? (
+              <p className="text-xs text-muted-foreground italic">Nenhuma tarefa vinculada a esta meta.</p>
+            ) : (
+              <div className="grid gap-1.5 max-h-48 overflow-y-auto pr-1">
+                {linkedTasks.map((t) => {
+                  const isTaskDone = t.status === "concluida";
+                  const assignees = t.assignee === "ambos" 
+                    ? data.users 
+                    : data.users.filter((u) => u.id === t.assignee);
+                  return (
+                    <div
+                      key={t.id}
+                      onClick={() => router.push(`/tarefas?open=${t.id}`)}
+                      className="flex items-center justify-between gap-2.5 rounded-input bg-panel/40 px-3 py-2 border border-line/35 hover:bg-panel cursor-pointer transition-all"
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-xs select-none">
+                          {isTaskDone ? "✅" : "⬜"}
+                        </span>
+                        <span className={cn(
+                          "text-xs truncate font-medium text-content",
+                          isTaskDone && "line-through text-muted-foreground"
+                        )}>
+                          {t.title}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        {assignees.map((u) => (
+                          <Avatar
+                            key={u.id}
+                            user={u}
+                            size={20}
+                            className="border border-line"
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => router.push(`/tarefas?create_for_goal=${goal.id}`)}
+              className="flex w-full items-center justify-center gap-1.5 rounded-input border border-dashed border-line py-2 text-xs font-bold text-muted hover:border-brand hover:text-brand transition-colors cursor-pointer"
+            >
+              <Plus className="size-3.5" />
+              <span>Criar tarefa vinculada</span>
+            </button>
+          </div>
 
           {/* Complete directly if Numerical is done or manual complete */}
           {!isDone && !isFinancial && (

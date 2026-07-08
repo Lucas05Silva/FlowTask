@@ -1,4 +1,4 @@
-import type { Priority, RecurrenceRule, FlowTaskData, Achievement } from "@/types";
+import type { Priority, RecurrenceRule, FlowTaskData, Achievement, Goal } from "@/types";
 import { uid } from "@/lib/utils";
 
 /** Side effects of an XP-earning action, surfaced to the UI for toasts/modals. */
@@ -9,6 +9,12 @@ export interface CelebrationResult {
   newTitle: string;
   achievements: Achievement[];
   streakCount: number;
+  completedGoal?: Goal;
+  goalProgress?: {
+    goal: Goal;
+    previousValue: number;
+    newValue: number;
+  };
 }
 
 /** Level thresholds & titles (prompt §7.2). */

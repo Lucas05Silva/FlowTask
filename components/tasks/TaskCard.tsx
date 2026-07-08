@@ -1,7 +1,8 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Repeat, CalendarDays, ListTree, Braces } from "lucide-react";
+import { Repeat, CalendarDays, ListTree, Braces, Target } from "lucide-react";
+import { useRouter } from "next/navigation";
 import type { Task } from "@/types";
 import { useData } from "@/hooks/useData";
 import { useTasks } from "@/hooks/useTasks";
@@ -20,6 +21,7 @@ interface TaskCardProps {
 
 export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
   const data = useData();
+  const router = useRouter();
   const { setStatus } = useTasks();
   const done = task.status === "concluida";
   const cat = CATEGORY_META[task.category];
@@ -70,22 +72,26 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
           )}
         >
           <motion.svg
+            className="size-3.5 stroke-current stroke-[3]"
             viewBox="0 0 24 24"
-            className="size-3.5"
             fill="none"
-            stroke="currentColor"
-            strokeWidth="3.5"
             initial={false}
-            animate={done ? { scale: 1 } : { scale: 0 }}
-            transition={{ type: "spring", damping: 12, stiffness: 400 }}
+            animate={{ scale: done ? 1 : 0 }}
+            transition={{ type: "spring", stiffness: 500, damping: 30 }}
           >
-            <path d="M5 13l4 4L19 7" strokeLinecap="round" strokeLinejoin="round" />
+            <path d="M20 6 9 17l-5-5" />
           </motion.svg>
         </button>
 
+        {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <h3 className={cn("text-sm font-semibold leading-snug text-content", done && "text-muted line-through")}>
+            <h3
+              className={cn(
+                "text-sm font-bold leading-tight text-content transition-all",
+                done && "text-muted-foreground line-through decoration-muted-foreground/50",
+              )}
+            >
               {task.title}
             </h3>
             {task.isRecurring && (
@@ -107,6 +113,26 @@ export function TaskCard({ task, onComplete, onOpen }: TaskCardProps) {
               <span className="size-1.5 rounded-full" style={{ backgroundColor: cat.color }} />
               {cat.label}
             </Badge>
+
+            {task.goalId && (() => {
+              const goal = data.goals.find((g) => g.id === task.goalId);
+              if (!goal) return null;
+              const displayTitle = goal.title.length > 20 ? goal.title.slice(0, 17) + "..." : goal.title;
+              return (
+                <button
+                  type="button"
+                  title={`${goal.title} (${goal.currentAmount}/${goal.targetAmount} ${goal.unit || ""})`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    router.push(`/metas?id=${goal.id}`);
+                  }}
+                  className="inline-flex items-center gap-1.5 rounded-badge border border-brand/20 bg-brand/10 px-2 py-0.5 text-xs font-semibold text-brand transition-colors hover:bg-brand/20 cursor-pointer"
+                >
+                  <Target className="size-3.5" />
+                  <span>{displayTitle}</span>
+                </button>
+              );
+            })()}
 
             {task.dueDate && (
               <span

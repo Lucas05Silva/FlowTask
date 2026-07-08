@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "next/navigation";
 import { Plus, ClipboardList } from "lucide-react";
 import type { Task } from "@/types";
 import { useTasks, type TaskFormData } from "@/hooks/useTasks";
@@ -16,12 +17,31 @@ import { TaskModal, type TaskModalTab } from "./TaskModal";
 export function TaskPage() {
   const { tasks, createTask, updateTask, deleteTask, completeTask } = useTasks();
   const { celebrate } = useGamification();
+  const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<TaskFilterState>(DEFAULT_FILTERS);
   const [view, setView] = useState<ViewMode>("status");
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [modalTab, setModalTab] = useState<TaskModalTab>("subtarefas");
+  const [defaultGoalId, setDefaultGoalId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const openTaskId = searchParams.get("open");
+    const createForGoalId = searchParams.get("create_for_goal");
+
+    if (openTaskId) {
+      const taskToOpen = tasks.find((t) => t.id === openTaskId);
+      if (taskToOpen) {
+        openEdit(taskToOpen);
+      }
+    } else if (createForGoalId) {
+      setDefaultGoalId(createForGoalId);
+      setEditing(null);
+      setModalTab("subtarefas");
+      setModalOpen(true);
+    }
+  }, [searchParams, tasks]);
 
   const filtered = useMemo(() => {
     const q = filters.search.trim().toLowerCase();
@@ -114,7 +134,11 @@ export function TaskPage() {
         open={modalOpen}
         task={editing}
         initialTab={modalTab}
-        onClose={() => setModalOpen(false)}
+        defaultGoalId={defaultGoalId}
+        onClose={() => {
+          setModalOpen(false);
+          setDefaultGoalId(null);
+        }}
         onCreate={createTask}
         onUpdate={handleUpdate}
         onComplete={complete}

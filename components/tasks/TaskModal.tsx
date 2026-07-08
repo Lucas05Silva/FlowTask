@@ -5,7 +5,7 @@
 
 import { useEffect, useState } from "react";
 import { Star, Trash2, Repeat } from "lucide-react";
-import type { Assignee, Category, Goal, Priority, RecurrenceRule, Task } from "@/types";
+import type { Assignee, Category, Goal, Priority, RecurrenceRule, Task, GoalType } from "@/types";
 import { useData } from "@/hooks/useData";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
@@ -28,9 +28,10 @@ interface TaskModalProps {
   onComplete: (id: string) => CelebrationResult | null;
   onDelete: (id: string) => void;
   initialTab?: TaskModalTab;
+  defaultGoalId?: string | null;
 }
 
-function emptyForm(): TaskFormData {
+function emptyForm(defaultGoalId?: string | null): TaskFormData {
   return {
     title: "",
     description: "",
@@ -41,7 +42,7 @@ function emptyForm(): TaskFormData {
     isRecurring: false,
     recurrenceRule: "semanal",
     subtasks: [],
-    goalId: null,
+    goalId: defaultGoalId || null,
     status: "a_fazer",
   };
 }
@@ -64,9 +65,9 @@ function fromTask(t: Task): TaskFormData {
 
 const ASSIGNEES: Assignee[] = ["lucas", "thaiane", "ambos"];
 
-export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete, onDelete, initialTab }: TaskModalProps) {
+export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete, onDelete, initialTab, defaultGoalId }: TaskModalProps) {
   const data = useData();
-  const [form, setForm] = useState<TaskFormData>(emptyForm());
+  const [form, setForm] = useState<TaskFormData>(emptyForm(defaultGoalId));
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [tab, setTab] = useState<TaskModalTab>("subtarefas");
@@ -74,12 +75,12 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
 
   useEffect(() => {
     if (open) {
-      setForm(task ? fromTask(task) : emptyForm());
+      setForm(task ? fromTask(task) : emptyForm(defaultGoalId));
       setError(null);
       setConfirmDelete(false);
       setTab(initialTab ?? "subtarefas");
     }
-  }, [open, task, initialTab]);
+  }, [open, task, initialTab, defaultGoalId]);
 
   function patch(p: Partial<TaskFormData>) {
     setForm((f) => ({ ...f, ...p }));
@@ -95,7 +96,20 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
     onClose();
   }
 
-  const goalOptions = data.goals.filter((g: Goal) => g.status !== "concluida");
+  const GOAL_TYPE_LABELS: Record<GoalType, string> = {
+    projeto: "Projetos",
+    pessoal: "Pessoal",
+    apartamento: "Apartamento",
+    casamento: "Casamento",
+    financeira: "Financeira"
+  };
+
+  const activeGoals = data.goals.filter((g) => g.status !== "concluida");
+  const goalsByType = activeGoals.reduce((acc, g) => {
+    if (!acc[g.type]) acc[g.type] = [];
+    acc[g.type].push(g);
+    return acc;
+  }, {} as Record<GoalType, Goal[]>);
 
   return (
     <Modal
@@ -149,14 +163,101 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
           </div>
           <div>
             <Label htmlFor="task-goal">Vincular a meta</Label>
-            <Select id="task-goal" value={form.goalId ?? ""} onChange={(e) => patch({ goalId: e.target.value || null })}>
+            <Select
+              id="task-goal"
+              value={form.goalId ?? ""}
+              onChange={(e) => {
+                const gId = e.target.value || null;
+                const targetGoal = data.goals.find((g) => g.id === gId);
+                patch({
+                  goalId: gId,
+                  goalContributionType: targetGoal?.contributionType || "count",
+                  goalContributionValue: targetGoal?.contributionType === "value" ? (targetGoal.contributionValuePerTask || 1) : 1
+                });
+              }}
+            >
               <option value="">Nenhuma</option>
-              {goalOptions.map((g) => (
-                <option key={g.id} value={g.id}>{g.title}</option>
+              {(Object.keys(goalsByType) as GoalType[]).map((type) => (
+                <optgroup key={type} label={GOAL_TYPE_LABELS[type]}>
+                  {goalsByType[type].map((g) => (
+                    <option key={g.id} value={g.id}>
+                      {g.title} ({g.currentAmount}/{g.targetAmount} {g.unit || ""})
+                    </option>
+                  ))}
+                </optgroup>
               ))}
             </Select>
           </div>
         </div>
+
+        {(() => {
+          const selectedGoal = data.goals.find((g) => g.id === form.goalId);
+          if (!selectedGoal) return null;
+
+          const type = form.goalContributionType || selectedGoal.contributionType || "count";
+          let addedValue = 1;
+          if (type === "value") {
+            addedValue = form.goalContributionValue ?? selectedGoal.contributionValuePerTask ?? 0;
+          } else if (type === "count") {
+            addedValue = form.goalContributionValue ?? 1;
+          }
+
+          const nextVal = Math.min(selectedGoal.targetAmount, selectedGoal.currentAmount + (type === "checklist" ? 1 : addedValue));
+          const prevPct = Math.round((selectedGoal.currentAmount / selectedGoal.targetAmount) * 100);
+          const nextPct = Math.round((nextVal / selectedGoal.targetAmount) * 100);
+
+          return (
+            <div className="rounded-card border border-line bg-panel/30 p-3.5 space-y-3 animate-in fade-in duration-200">
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-muted-foreground">Como contribui?</Label>
+                {selectedGoal.contributionType === "count" && (
+                  <p className="text-sm font-semibold text-content">🎯 Ao concluir, soma +1 na meta</p>
+                )}
+                {selectedGoal.contributionType === "checklist" && (
+                  <p className="text-sm font-semibold text-content">📋 Ao concluir, marca este item da meta</p>
+                )}
+                {selectedGoal.contributionType === "value" && (
+                  <div className="space-y-1.5">
+                    <p className="text-xs text-muted-foreground">Cada tarefa contribui com um valor numérico para a meta.</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        className="w-28"
+                        value={form.goalContributionValue ?? selectedGoal.contributionValuePerTask ?? 1}
+                        onChange={(e) => patch({ goalContributionValue: Number(e.target.value) || 0 })}
+                      />
+                      <span className="text-sm font-bold text-muted-foreground">{selectedGoal.unit || "unidades"}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-1.5 pt-1.5 border-t border-line">
+                <div className="flex justify-between items-center text-xs">
+                  <span className="font-bold text-brand">Preview do impacto:</span>
+                  <span className="font-semibold text-muted-foreground">
+                    {selectedGoal.currentAmount}/{selectedGoal.targetAmount} → {nextVal}/{selectedGoal.targetAmount}
+                  </span>
+                </div>
+                <p className="text-xs text-muted">
+                  Ao concluir esta tarefa, a meta <strong>{selectedGoal.title}</strong> irá de <strong>{prevPct}%</strong> para <strong>{nextPct}%</strong>.
+                </p>
+                <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-panel">
+                  {/* Nova barra roxa (projetado) */}
+                  <div
+                    className="absolute left-0 top-0 h-full bg-brand transition-all duration-300"
+                    style={{ width: `${nextPct}%` }}
+                  />
+                  {/* Barra verde (atual) */}
+                  <div
+                    className="absolute left-0 top-0 h-full bg-success transition-all duration-300"
+                    style={{ width: `${prevPct}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div>
           <Label>Prioridade</Label>

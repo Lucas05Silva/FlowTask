@@ -69,6 +69,8 @@ export interface Task {
   recurrenceRule: RecurrenceRule | null;
   parentTaskId: ID | null;
   goalId: ID | null;
+  goalContributionType?: GoalContributionType;
+  goalContributionValue?: number;
   xpReward: number;
   order: number;
   createdBy: ID;
@@ -177,6 +179,7 @@ export type GoalType =
   | "apartamento"
   | "casamento";
 
+export type GoalContributionType = "count" | "value" | "checklist";
 export type GoalStatus = "em_andamento" | "concluida" | "atrasada";
 export interface GoalCheckItem {
   id: string;
@@ -202,6 +205,8 @@ export interface Goal {
   createdBy: ID;
   createdAt: string;
   completedAt: string | null;
+  contributionType?: GoalContributionType;
+  contributionValuePerTask?: number;
 }
 
 export type Room =
