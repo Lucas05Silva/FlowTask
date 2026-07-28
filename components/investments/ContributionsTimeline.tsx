@@ -12,6 +12,7 @@ import { formatBRL, formatDate } from "@/lib/utils";
 interface ContributionsTimelineProps {
   contributions: InvestmentContribution[];
   investments: Investment[];
+  initialInvestmentId?: string | null;
   onCreateAvulso: () => void;
   onDelete: (id: string) => void;
 }
@@ -24,10 +25,11 @@ const MONTH_LABELS = [
 export function ContributionsTimeline({
   contributions,
   investments,
+  initialInvestmentId,
   onCreateAvulso,
   onDelete,
 }: ContributionsTimelineProps) {
-  const [investmentFilter, setInvestmentFilter] = useState<string>("todos");
+  const [investmentFilter, setInvestmentFilter] = useState<string>(initialInvestmentId ?? "todos");
 
   const nameById = useMemo(() => new Map(investments.map((i) => [i.id, i])), [investments]);
 

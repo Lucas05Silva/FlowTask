@@ -62,6 +62,7 @@ export function InvestmentsPage() {
 
   const [contributionModalOpen, setContributionModalOpen] = useState(false);
   const [contributionTarget, setContributionTarget] = useState<Investment | null>(null);
+  const [contributionsFilterId, setContributionsFilterId] = useState<string | null>(null);
 
   const [manualMonthly, setManualMonthly] = useState(0);
 
@@ -164,6 +165,12 @@ export function InvestmentsPage() {
     if (next) setActiveTab("investments");
   };
 
+  const viewContributions = (inv: Investment) => {
+    setContributionsFilterId(inv.id);
+    setEmergencyFilter(false);
+    setActiveTab("contributions");
+  };
+
   return (
     <div className="mx-auto max-w-6xl space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -171,7 +178,7 @@ export function InvestmentsPage() {
           title="Investimentos"
           subtitle="Seu patrimônio pessoal e evolução financeira."
         />
-        <Button icon={Plus} onClick={openCreate} className="self-start">
+        <Button icon={Plus} onClick={openCreate} className="hidden self-start sm:inline-flex">
           Novo Investimento
         </Button>
       </div>
@@ -218,6 +225,8 @@ export function InvestmentsPage() {
               onClick={() => {
                 setActiveTab(tab.key);
                 if (tab.key !== "investments") setEmergencyFilter(false);
+                // Direct tab click shows all contributions (deep-link uses viewContributions).
+                if (tab.key === "contributions") setContributionsFilterId(null);
               }}
               className={cn(
                 "relative border-b-2 py-3.5 text-sm font-semibold transition-all hover:text-content",
@@ -248,12 +257,15 @@ export function InvestmentsPage() {
             onCreate={openCreate}
             onAddContribution={openContribution}
             onEdit={openEdit}
+            onDelete={deleteInvestment}
+            onViewContributions={viewContributions}
           />
         )}
         {activeTab === "contributions" && (
           <ContributionsTimeline
             contributions={contributions}
             investments={investments}
+            initialInvestmentId={contributionsFilterId}
             onCreateAvulso={() => openContribution(null)}
             onDelete={deleteContribution}
           />
@@ -283,6 +295,16 @@ export function InvestmentsPage() {
         onClose={() => setContributionModalOpen(false)}
         onSubmit={handleContribution}
       />
+
+      {/* Mobile FAB — clears the bottom nav bar (h-16) */}
+      <button
+        type="button"
+        onClick={openCreate}
+        aria-label="Novo investimento"
+        className="fixed bottom-20 right-4 z-30 grid size-14 place-items-center rounded-full bg-brand text-white shadow-pop transition-transform hover:scale-105 active:scale-95 md:hidden"
+      >
+        <Plus className="size-6" />
+      </button>
     </div>
   );
 }

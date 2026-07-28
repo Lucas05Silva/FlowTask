@@ -70,6 +70,8 @@ export function InvestmentModal({
 }: InvestmentModalProps) {
   const [form, setForm] = useState<InvestmentFormData>(emptyForm());
   const [error, setError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState(false);
+  const [amountError, setAmountError] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const isEdit = investment !== null;
 
@@ -77,11 +79,15 @@ export function InvestmentModal({
     if (open) {
       setForm(investment ? fromInvestment(investment) : emptyForm());
       setError(null);
+      setNameError(false);
+      setAmountError(false);
       setConfirmDelete(false);
     }
   }, [open, investment]);
 
   function patch(p: Partial<InvestmentFormData>) {
+    if (p.name !== undefined && p.name.trim()) setNameError(false);
+    if (p.initialAmount !== undefined && p.initialAmount > 0) setAmountError(false);
     setForm((f) => {
       const next = { ...f, ...p };
       // Auto-align indexer with the chosen type.
@@ -93,12 +99,16 @@ export function InvestmentModal({
   }
 
   function handleSave() {
-    if (!form.name.trim()) {
-      setError("Dê um nome ao investimento.");
-      return;
-    }
-    if (form.initialAmount <= 0 && !isEdit) {
-      setError("Informe um valor inicial maior que zero.");
+    const invalidName = !form.name.trim();
+    const invalidAmount = form.initialAmount <= 0 && !isEdit;
+    if (invalidName || invalidAmount) {
+      setNameError(invalidName);
+      setAmountError(invalidAmount);
+      setError(
+        invalidName
+          ? "Dê um nome ao investimento."
+          : "Informe um valor inicial maior que zero.",
+      );
       return;
     }
     if (isEdit && investment) {
@@ -152,6 +162,8 @@ export function InvestmentModal({
             value={form.name}
             onChange={(e) => patch({ name: e.target.value })}
             placeholder="Ex: Tesouro Selic 2027"
+            aria-invalid={nameError}
+            className={cn(nameError && "border-danger focus:border-danger")}
             autoFocus
           />
         </div>
@@ -211,7 +223,12 @@ export function InvestmentModal({
               value={form.initialAmount}
               onChange={(v) => patch({ initialAmount: v })}
               disabled={isEdit}
-              className={cn("font-semibold", isEdit && "opacity-60")}
+              aria-invalid={amountError}
+              className={cn(
+                "font-semibold",
+                isEdit && "opacity-60",
+                amountError && "border-danger focus:border-danger",
+              )}
             />
           </div>
         </div>

@@ -1,6 +1,17 @@
 "use client";
 
-import { Plus, Pencil, ShieldCheck, TrendingUp, TrendingDown, Link2 } from "lucide-react";
+import { useState } from "react";
+import {
+  Plus,
+  Pencil,
+  ShieldCheck,
+  TrendingUp,
+  TrendingDown,
+  Link2,
+  MoreVertical,
+  History,
+  Trash2,
+} from "lucide-react";
 import type { Investment } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
@@ -13,9 +24,25 @@ interface InvestmentCardProps {
   linkedGoalTitle?: string | null;
   onAddContribution: (inv: Investment) => void;
   onEdit: (inv: Investment) => void;
+  onDelete: (id: string) => void;
+  onViewContributions: (inv: Investment) => void;
 }
 
-export function InvestmentCard({ investment, linkedGoalTitle, onAddContribution, onEdit }: InvestmentCardProps) {
+export function InvestmentCard({
+  investment,
+  linkedGoalTitle,
+  onAddContribution,
+  onEdit,
+  onDelete,
+  onViewContributions,
+}: InvestmentCardProps) {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setConfirmDelete(false);
+  };
+
   const meta = INVESTMENT_TYPE_META[investment.type];
   const gain = investment.currentValue - investment.investedAmount;
   const gainPct = investment.investedAmount > 0 ? (gain / investment.investedAmount) * 100 : 0;
@@ -147,16 +174,105 @@ export function InvestmentCard({ investment, linkedGoalTitle, onAddContribution,
         <Button size="sm" variant="outline" icon={Plus} onClick={() => onAddContribution(investment)}>
           Aporte
         </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon={Pencil}
-          onClick={() => onEdit(investment)}
-          aria-label="Editar investimento"
-        >
-          Editar
-        </Button>
+
+        <div className="relative">
+          <button
+            type="button"
+            aria-label="Mais opções"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className="grid size-9 place-items-center rounded-input text-muted transition-colors hover:bg-panel hover:text-content"
+          >
+            <MoreVertical className="size-5" />
+          </button>
+
+          {menuOpen && (
+            <>
+              {/* click-outside backdrop */}
+              <button
+                type="button"
+                aria-hidden
+                tabIndex={-1}
+                onClick={closeMenu}
+                className="fixed inset-0 z-40 cursor-default"
+              />
+              <div
+                role="menu"
+                className="absolute bottom-full right-0 z-50 mb-1 w-48 overflow-hidden rounded-input border border-line bg-surface p-1 shadow-pop"
+              >
+                {confirmDelete ? (
+                  <div className="p-2">
+                    <p className="mb-2 text-xs text-danger">Excluir este investimento e seus aportes?</p>
+                    <div className="flex justify-end gap-2">
+                      <Button size="sm" variant="ghost" onClick={() => setConfirmDelete(false)}>
+                        Não
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="danger"
+                        onClick={() => {
+                          onDelete(investment.id);
+                          closeMenu();
+                        }}
+                      >
+                        Excluir
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <MenuItem
+                      icon={Pencil}
+                      label="Editar"
+                      onClick={() => {
+                        onEdit(investment);
+                        closeMenu();
+                      }}
+                    />
+                    <MenuItem
+                      icon={History}
+                      label="Ver aportes"
+                      onClick={() => {
+                        onViewContributions(investment);
+                        closeMenu();
+                      }}
+                    />
+                    <MenuItem icon={Trash2} label="Excluir" danger onClick={() => setConfirmDelete(true)} />
+                  </>
+                )}
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </Card>
+  );
+}
+
+function MenuItem({
+  icon: Icon,
+  label,
+  onClick,
+  danger,
+}: {
+  icon: typeof Pencil;
+  label: string;
+  onClick: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="menuitem"
+      onClick={onClick}
+      className={cn(
+        "flex w-full items-center gap-2.5 rounded-[6px] px-3 py-2 text-sm font-medium transition-colors",
+        danger ? "text-danger hover:bg-danger/10" : "text-content hover:bg-panel",
+      )}
+    >
+      <Icon className="size-4 shrink-0" aria-hidden />
+      {label}
+    </button>
   );
 }

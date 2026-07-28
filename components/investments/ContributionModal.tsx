@@ -34,6 +34,7 @@ export function ContributionModal({
   const [form, setForm] = useState<ContributionFormData>(emptyForm());
   const [selectedId, setSelectedId] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
+  const [amountError, setAmountError] = useState(false);
 
   const usePicker = !investment;
 
@@ -41,11 +42,13 @@ export function ContributionModal({
     if (open) {
       setForm(emptyForm());
       setError(null);
+      setAmountError(false);
       setSelectedId(investment?.id ?? investments[0]?.id ?? "");
     }
   }, [open, investment, investments]);
 
   function patch(p: Partial<ContributionFormData>) {
+    if (p.amount !== undefined && p.amount > 0) setAmountError(false);
     setForm((f) => ({ ...f, ...p }));
   }
 
@@ -57,6 +60,7 @@ export function ContributionModal({
     }
     if (form.amount <= 0) {
       setError("Informe um valor maior que zero.");
+      setAmountError(true);
       return;
     }
     onSubmit(targetId, form);
@@ -107,7 +111,13 @@ export function ContributionModal({
             id="contrib-amount"
             value={form.amount}
             onChange={(v) => patch({ amount: v })}
-            className="text-lg font-bold text-success border-success/30 focus:border-success"
+            aria-invalid={amountError}
+            className={cn(
+              "text-lg font-bold",
+              amountError
+                ? "text-danger border-danger focus:border-danger"
+                : "text-success border-success/30 focus:border-success",
+            )}
             autoFocus
           />
         </div>

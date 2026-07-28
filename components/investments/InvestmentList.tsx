@@ -20,6 +20,8 @@ interface InvestmentListProps {
   onCreate: () => void;
   onAddContribution: (inv: Investment) => void;
   onEdit: (inv: Investment) => void;
+  onDelete: (id: string) => void;
+  onViewContributions: (inv: Investment) => void;
 }
 
 const TESOURO = new Set(["tesouro_selic", "tesouro_ipca", "tesouro_prefixado"]);
@@ -31,6 +33,8 @@ export function InvestmentList({
   onCreate,
   onAddContribution,
   onEdit,
+  onDelete,
+  onViewContributions,
 }: InvestmentListProps) {
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("todos");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
@@ -153,6 +157,8 @@ export function InvestmentList({
               linkedGoalTitle={goalTitle(inv.goalId)}
               onAddContribution={onAddContribution}
               onEdit={onEdit}
+              onDelete={onDelete}
+              onViewContributions={onViewContributions}
             />
           ))}
         </div>
