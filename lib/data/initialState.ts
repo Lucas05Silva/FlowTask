@@ -19,6 +19,12 @@ export const ACHIEVEMENTS: FlowTaskData["achievements"] = [
   { id: "ach_iaccept", key: "sim_eu_aceito", title: "Sim, eu aceito", description: "Todas as tarefas do casamento concluídas", icon: "Heart", xpReward: 250 },
   { id: "ach_couple", key: "casal_produtivo", title: "Casal produtivo", description: "Lucas e Thaiane no mesmo nível", icon: "Users", xpReward: 100 },
   { id: "ach_duo", key: "dupla_dinamica", title: "Dupla dinâmica", description: "Ambos com streak ativo de 7+ dias", icon: "Sparkles", xpReward: 150 },
+  { id: "ach_first_investment", key: "primeiro_investimento", title: "Primeiro Investimento", description: "Cadastrou o primeiro investimento", icon: "TrendingUp", xpReward: 50 },
+  { id: "ach_reserve_complete", key: "reserva_completa", title: "Reserva Completa", description: "Reserva de emergência 100% formada", icon: "ShieldCheck", xpReward: 100 },
+  { id: "ach_consistency", key: "consistencia", title: "Consistência", description: "3 meses seguidos com aporte", icon: "Repeat", xpReward: 75 },
+  { id: "ach_patrimony_10k", key: "patrimonio_10k", title: "Patrimônio 10k", description: "R$ 10.000 investidos", icon: "Landmark", xpReward: 100 },
+  { id: "ach_patrimony_50k", key: "patrimonio_50k", title: "Patrimônio 50k", description: "R$ 50.000 investidos", icon: "Landmark", xpReward: 150 },
+  { id: "ach_patrimony_100k", key: "patrimonio_100k", title: "Patrimônio 100k", description: "R$ 100.000 investidos", icon: "Landmark", xpReward: 200 },
 ];
 
 function freshUser(u: (typeof KNOWN_USERS)[number], createdAt: string): User {
@@ -58,6 +64,9 @@ export function emptyState(): FlowTaskData {
     notifications: [],
     taskPrompts: [],
     notes: [],
+    investments: [],
+    investmentContributions: [],
+    patrimonySnapshots: [],
     weddingDate: null,
     weddingVenueName: null,
     weddingVenueAddress: null,

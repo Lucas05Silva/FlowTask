@@ -13,6 +13,10 @@ import {
   Heart,
   Users,
   Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Repeat,
+  Landmark,
   Lock,
   type LucideIcon,
 } from "lucide-react";
@@ -39,6 +43,10 @@ const ICONS: Record<string, LucideIcon> = {
   Heart,
   Users,
   Sparkles,
+  TrendingUp,
+  ShieldCheck,
+  Repeat,
+  Landmark,
 };
 
 export function AchievementBadge({ achievement, unlocked, unlockedAt }: AchievementBadgeProps) {

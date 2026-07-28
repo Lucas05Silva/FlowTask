@@ -13,6 +13,8 @@ import {
   NotebookPen,
   Pin,
   Share2,
+  TrendingUp,
+  Coins,
 } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useData } from "@/hooks/useData";
@@ -24,6 +26,7 @@ import { StatCard } from "@/components/dashboard/StatCard";
 import { Ranking } from "@/components/gamification/Ranking";
 import { CATEGORY_META, PRIORITY_META } from "@/lib/constants";
 import { currentMonthTotals, lastMonths } from "@/lib/finance-utils";
+import { calculateCurrentValue, estimateMonthlyPassiveIncome } from "@/lib/investment-calculator";
 import {
   todayISO,
   daysUntil,
@@ -130,6 +133,26 @@ export default function DashboardPage() {
   const wedCompleted = weddingTasks.filter((t) => t.status === "concluida").length;
   const wedPercentage = wedTotal > 0 ? Math.round((wedCompleted / wedTotal) * 100) : 0;
 
+  const patrimony = useMemo(() => {
+    if (!user) return { total: 0, passive: 0, hasAny: false, spark: [] as number[] };
+    const mine = (data.investments || []).filter((i) => i.userId === user.id);
+    const contribsByInv = new Map<string, { amount: number; date: string }[]>();
+    (data.investmentContributions || [])
+      .filter((c) => c.userId === user.id)
+      .forEach((c) => {
+        const list = contribsByInv.get(c.investmentId) ?? [];
+        list.push({ amount: c.amount, date: c.date });
+        contribsByInv.set(c.investmentId, list);
+      });
+    const total = mine.reduce((s, i) => s + calculateCurrentValue(i, contribsByInv.get(i.id)), 0);
+    const spark = (data.patrimonySnapshots || [])
+      .filter((s) => s.userId === user.id)
+      .sort((a, b) => a.month.localeCompare(b.month))
+      .slice(-6)
+      .map((s) => s.totalCurrent);
+    return { total, passive: estimateMonthlyPassiveIncome(total), hasAny: mine.length > 0, spark };
+  }, [data.investments, data.investmentContributions, data.patrimonySnapshots, user]);
+
   const recentNotes = useMemo(() => {
     if (!user) return [];
     return (data.notes || [])
@@ -204,6 +227,55 @@ export default function DashboardPage() {
           hint="Conclua 1 tarefa hoje p/ manter 🔥"
           accent="var(--prio-alta)"
         />
+      </motion.div>
+
+      {/* Patrimônio investido */}
+      <motion.div variants={item}>
+        <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-4">
+            <span
+              className="grid size-12 shrink-0 place-items-center rounded-input"
+              style={{ backgroundColor: "color-mix(in srgb, var(--brand-purple) 16%, transparent)", color: "var(--brand-purple)" }}
+            >
+              <TrendingUp className="size-6" aria-hidden />
+            </span>
+            <div>
+              <p className="text-sm text-muted">Patrimônio investido</p>
+              <p className="text-2xl font-bold text-content">{formatBRL(patrimony.total)}</p>
+              <p className="mt-0.5 inline-flex items-center gap-1 text-xs text-muted">
+                <Coins className="size-3.5 text-cat-financeiro" />
+                Renda passiva est. ~{formatBRL(patrimony.passive)}/mês
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {patrimony.spark.length >= 2 && (
+              <svg viewBox="0 0 120 40" className="h-10 w-28" preserveAspectRatio="none" aria-hidden>
+                <polyline
+                  fill="none"
+                  stroke="var(--brand-purple)"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  points={patrimony.spark
+                    .map((v, i) => {
+                      const max = Math.max(1, ...patrimony.spark);
+                      const min = Math.min(...patrimony.spark);
+                      const range = max - min || 1;
+                      const x = (i / (patrimony.spark.length - 1)) * 120;
+                      const y = 36 - ((v - min) / range) * 32;
+                      return `${x.toFixed(1)},${y.toFixed(1)}`;
+                    })
+                    .join(" ")}
+                />
+              </svg>
+            )}
+            <Link href="/investimentos" className="text-sm font-medium text-brand hover:underline">
+              {patrimony.hasAny ? "Ver" : "Começar a investir →"}
+            </Link>
+          </div>
+        </Card>
       </motion.div>
 
       {/* Hoje + Ranking */}

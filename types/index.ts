@@ -349,6 +349,68 @@ export interface Note {
   updatedAt: string;
 }
 
+/* --- Investimentos (Fase 15) ---------------------------------------------- */
+
+/** Supported investment vehicles. */
+export type InvestmentType =
+  | "tesouro_selic"
+  | "tesouro_ipca"
+  | "tesouro_prefixado"
+  | "cdb"
+  | "lci_lca"
+  | "fii"
+  | "acao"
+  | "crypto"
+  | "poupanca"
+  | "outro";
+
+/** Yield indexer. */
+export type IndexType = "selic" | "ipca" | "cdi" | "prefixado" | "nenhum";
+
+export type InvestmentLiquidity = "diaria" | "no_vencimento" | "carencia";
+
+/** A single investment position owned by a user (Lucas/Thaiane independent). */
+export interface Investment {
+  id: ID;
+  userId: ID; // owner
+  name: string; // ex: "Tesouro Selic 2027", "CDB Nubank"
+  type: InvestmentType;
+  index: IndexType;
+  rate: number; // extra rate (ex: IPCA + 6.5 → rate = 6.5)
+  investedAmount: number; // total contributed (sum of contributions)
+  currentValue: number; // estimated current value (auto-calculated)
+  purchaseDate: string; // date of the first contribution (yyyy-mm-dd)
+  maturityDate?: string | null; // vencimento (null for daily liquidity)
+  liquidity: InvestmentLiquidity;
+  liquidityDays?: number | null; // carência in days (if applicable)
+  isEmergencyFund: boolean; // part of the emergency reserve
+  goalId?: ID | null; // linked Metas goal (optional)
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Individual contribution (deposit history) for an investment. */
+export interface InvestmentContribution {
+  id: ID;
+  investmentId: ID;
+  userId: ID;
+  amount: number;
+  date: string; // yyyy-mm-dd
+  notes?: string;
+  createdAt: string;
+}
+
+/** Monthly patrimony snapshot (for the evolution chart). */
+export interface PatrimonySnapshot {
+  id: ID;
+  userId: ID;
+  month: string; // "YYYY-MM"
+  totalInvested: number;
+  totalCurrent: number;
+  snapshotAt: string;
+}
+
 /** Top-level shape of the mock store persisted to localStorage. */
 export interface FlowTaskData {
   users: User[];
@@ -367,6 +429,9 @@ export interface FlowTaskData {
   notifications: AppNotification[];
   taskPrompts: TaskPrompt[];
   notes: Note[];
+  investments: Investment[];
+  investmentContributions: InvestmentContribution[];
+  patrimonySnapshots: PatrimonySnapshot[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;
