@@ -24,13 +24,16 @@ export function InvestmentCard({ investment, linkedGoalTitle, onAddContribution,
   const daysToMaturity = investment.maturityDate ? daysUntil(investment.maturityDate) : null;
   const maturitySoon = daysToMaturity !== null && daysToMaturity >= 0 && daysToMaturity <= 90;
 
-  // Progress toward maturity (0–100).
+  // Progress toward maturity (0–100), derived from day counts (no clock read here).
   let maturityPct: number | null = null;
-  if (investment.maturityDate) {
+  if (investment.maturityDate && daysToMaturity !== null) {
     const start = new Date(investment.purchaseDate).getTime();
     const end = new Date(investment.maturityDate).getTime();
-    const now = Date.now();
-    if (end > start) maturityPct = Math.max(0, Math.min(100, ((now - start) / (end - start)) * 100));
+    const totalDays = (end - start) / 86400000;
+    if (totalDays > 0) {
+      const elapsed = totalDays - daysToMaturity;
+      maturityPct = Math.max(0, Math.min(100, (elapsed / totalDays) * 100));
+    }
   }
 
   const rateLabel =

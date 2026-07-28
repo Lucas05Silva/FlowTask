@@ -45,7 +45,6 @@ export function InvestmentsPage() {
     getTotalReturnPercent,
     getEmergencyFundTotal,
     getMonthlyPassiveIncome,
-    getPortfolioAverageRate,
     createInvestment,
     updateInvestment,
     deleteInvestment,
@@ -91,7 +90,6 @@ export function InvestmentsPage() {
   const returnPct = getTotalReturnPercent();
   const emergencyTotal = getEmergencyFundTotal();
   const passiveIncome = getMonthlyPassiveIncome();
-  const avgRate = getPortfolioAverageRate();
 
   const reserveMonthly = monthlyExpenseEstimate > 0 ? monthlyExpenseEstimate : manualMonthly;
   const reserveTarget = reserveMonthly * 4;
@@ -261,7 +259,7 @@ export function InvestmentsPage() {
           />
         )}
         {activeTab === "projection" && (
-          <ProjectionTab currentValue={totalCurrent} suggestedRate={avgRate} />
+          <ProjectionTab currentValue={totalCurrent} />
         )}
       </div>
 

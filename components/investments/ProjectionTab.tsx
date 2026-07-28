@@ -12,7 +12,6 @@ import {
 
 interface ProjectionTabProps {
   currentValue: number;
-  suggestedRate: number;
 }
 
 function monthsLabel(months: number | null): string {
@@ -23,10 +22,10 @@ function monthsLabel(months: number | null): string {
   return rem === 0 ? `${years} ${years === 1 ? "ano" : "anos"}` : `${years}a ${rem}m`;
 }
 
-export function ProjectionTab({ currentValue, suggestedRate }: ProjectionTabProps) {
+export function ProjectionTab({ currentValue }: ProjectionTabProps) {
   const [patrimony, setPatrimony] = useState(Math.round(currentValue));
   const [monthly, setMonthly] = useState(290);
-  const [rate, setRate] = useState(Math.round(suggestedRate * 10) / 10 || 10.5);
+  const [rate, setRate] = useState(10.5); // default a.a. (Fase 15 §6)
   const [years, setYears] = useState(10);
 
   // Keep patrimony in sync when the portfolio value loads/changes.

@@ -73,13 +73,23 @@ function extraAchievementsFor(
   return out;
 }
 
-/** Sync a linked goal's progress to an investment's current value (pure). */
-function syncLinkedGoal(d: FlowTaskData, inv: Investment): { d: FlowTaskData; completed: Goal | null } {
-  if (!inv.goalId) return { d, completed: null };
+/**
+ * Recompute a linked goal's progress from the SUM of every investment tied to
+ * it (a goal like "Reserva de Emergência" can aggregate several positions).
+ * Pure — expects `d.investments` to already contain the mutated investment.
+ */
+function recomputeLinkedGoal(
+  d: FlowTaskData,
+  goalId: string | null | undefined,
+): { d: FlowTaskData; completed: Goal | null } {
+  if (!goalId) return { d, completed: null };
+  const linkedSum = d.investments
+    .filter((i) => i.goalId === goalId)
+    .reduce((s, i) => s + i.currentValue, 0);
   let completed: Goal | null = null;
   const goals = d.goals.map((g) => {
-    if (g.id !== inv.goalId) return g;
-    const nextAmount = Math.min(g.targetAmount, Math.round(inv.currentValue));
+    if (g.id !== goalId) return g;
+    const nextAmount = Math.min(g.targetAmount, Math.round(linkedSum));
     const isDone = nextAmount >= g.targetAmount && g.targetAmount > 0;
     const wasDone = g.status === "concluida";
     const updated: Goal = {
@@ -342,7 +352,7 @@ export function useInvestments() {
           investmentContributions: [...d.investmentContributions, firstContribution],
         };
 
-        const { d: withGoal, completed } = syncLinkedGoal(next, investment);
+        const { d: withGoal, completed } = recomputeLinkedGoal(next, investment.goalId);
         next = withGoal;
 
         const extra = extraAchievementsFor(next, userId, monthlyExpenseEstimate);
@@ -370,12 +380,17 @@ export function useInvestments() {
   }, []);
 
   const deleteInvestment = useCallback((id: string) => {
-    updateData((d) => ({
-      ...d,
-      investments: d.investments.filter((inv) => inv.id !== id),
-      // No DB FK cascade (text ids) — remove contributions in-app.
-      investmentContributions: d.investmentContributions.filter((c) => c.investmentId !== id),
-    }));
+    updateData((d) => {
+      const removed = d.investments.find((inv) => inv.id === id);
+      const next: FlowTaskData = {
+        ...d,
+        investments: d.investments.filter((inv) => inv.id !== id),
+        // No DB FK cascade (text ids) — remove contributions in-app.
+        investmentContributions: d.investmentContributions.filter((c) => c.investmentId !== id),
+      };
+      // Keep any linked goal's progress in sync after removal.
+      return recomputeLinkedGoal(next, removed?.goalId).d;
+    });
   }, []);
 
   /* ---- contributions ------------------------------------------------------- */
@@ -441,7 +456,7 @@ export function useInvestments() {
           next = { ...next, finances: [...next.finances, expense] };
         }
 
-        const { d: withGoal, completed } = syncLinkedGoal(next, updatedInvestment);
+        const { d: withGoal, completed } = recomputeLinkedGoal(next, updatedInvestment.goalId);
         next = withGoal;
 
         const extra = extraAchievementsFor(next, userId, monthlyExpenseEstimate);
@@ -520,69 +535,137 @@ export function useInvestments() {
     [data.patrimonySnapshots, userId],
   );
 
-  /* ---- seed (Lucas, first access only — guarded by a localStorage flag) ---- */
+  /* ---- seed (Lucas's real portfolio — runs once, upgrades v1 data) --------- */
   const seedIfEmpty = useCallback(() => {
     if (!userId || userId !== LUCAS_ID) return;
     if (typeof window === "undefined") return;
-    const flagKey = `flowtask_investments_seeded_${userId}`;
+    // Versioned flag: v2 adds the "Reserva de Emergência" goal + links + notes,
+    // so it runs once even for browsers that already ran the original seed.
+    const flagKey = `flowtask_investments_seed_v2_${userId}`;
     if (window.localStorage.getItem(flagKey)) return;
-    // Only seed a truly empty portfolio.
-    const hasAny = data.investments.some((i) => i.userId === userId);
-    if (hasAny) {
-      window.localStorage.setItem(flagKey, "1");
-      return;
-    }
     window.localStorage.setItem(flagKey, "1");
 
     const nowIso = new Date().toISOString();
-    const seeds: { inv: Omit<Investment, "currentValue">; }[] = [
+    const RESERVE_TARGET = 6000;
+    const GOAL_TITLE = "Reserva de Emergência";
+
+    const specs = [
       {
-        inv: {
-          id: uid("inv"), userId, name: "Tesouro Selic 2027", type: "tesouro_selic", index: "selic",
-          rate: 0, investedAmount: 194, purchaseDate: "2026-06-01", maturityDate: "2027-03-01",
-          liquidity: "diaria", liquidityDays: null, isEmergencyFund: true, goalId: null,
-          notes: undefined, createdAt: nowIso, updatedAt: nowIso,
-        },
+        name: "Tesouro Selic 2027", type: "tesouro_selic" as const, index: "selic" as const,
+        rate: 0, amount: 194, purchase: "2026-06-01", maturity: "2027-03-01" as string | null,
+        liquidity: "diaria" as const, reserve: true,
+        notes: "Primeiro investimento — reserva de emergência", contribNote: "Aporte inicial",
       },
       {
-        inv: {
-          id: uid("inv"), userId, name: "CDB Diário Nubank", type: "cdb", index: "cdi",
-          rate: 100, investedAmount: 96, purchaseDate: "2026-06-01", maturityDate: null,
-          liquidity: "diaria", liquidityDays: null, isEmergencyFund: true, goalId: null,
-          notes: undefined, createdAt: nowIso, updatedAt: nowIso,
-        },
+        name: "CDB Diário Nubank", type: "cdb" as const, index: "cdi" as const,
+        rate: 100, amount: 96, purchase: "2026-06-01", maturity: null as string | null,
+        liquidity: "diaria" as const, reserve: true,
+        notes: "Sobra do mês — liquidez diária", contribNote: "Aporte inicial",
       },
       {
-        inv: {
-          id: uid("inv"), userId, name: "Tesouro IPCA+ 2035", type: "tesouro_ipca", index: "ipca",
-          rate: 6.5, investedAmount: 87, purchaseDate: "2026-07-01", maturityDate: "2035-05-15",
-          liquidity: "no_vencimento", liquidityDays: null, isEmergencyFund: false, goalId: null,
-          notes: undefined, createdAt: nowIso, updatedAt: nowIso,
-        },
+        name: "Tesouro IPCA+ 2035", type: "tesouro_ipca" as const, index: "ipca" as const,
+        rate: 6.5, amount: 87, purchase: "2026-07-01", maturity: "2035-05-15" as string | null,
+        liquidity: "no_vencimento" as const, reserve: false,
+        notes: "Longo prazo — não resgatar antes do vencimento", contribNote: "Aporte inicial — longo prazo",
       },
     ];
 
     updateData((d) => {
-      const newInvestments: Investment[] = [];
-      const newContributions: InvestmentContribution[] = [];
-      for (const { inv } of seeds) {
-        const firstContribution: InvestmentContribution = {
-          id: uid("ic"), investmentId: inv.id, userId, amount: inv.investedAmount,
-          date: inv.purchaseDate, notes: "Aporte inicial", createdAt: nowIso,
-        };
-        const currentValue = calculateCurrentValue(inv, [
-          { amount: firstContribution.amount, date: firstContribution.date },
-        ]);
-        newInvestments.push({ ...inv, currentValue });
-        newContributions.push(firstContribution);
+      // 1. Ensure the "Reserva de Emergência" goal (R$ 6.000).
+      const existingGoal = d.goals.find((g) => g.createdBy === userId && g.title === GOAL_TITLE);
+      const goalId = existingGoal?.id ?? uid("g");
+      let goals = existingGoal
+        ? d.goals.map((g) =>
+            g.id === goalId ? { ...g, type: "financeira" as const, targetAmount: RESERVE_TARGET, category: "reserva_emergencia", linkedModule: "investimentos" } : g,
+          )
+        : [
+            ...d.goals,
+            {
+              id: goalId, title: GOAL_TITLE,
+              description: "Segurança financeira — formada pelos investimentos marcados como reserva.",
+              type: "financeira" as const, targetAmount: RESERVE_TARGET, currentAmount: 0,
+              deadline: null, category: "reserva_emergencia", linkedModule: "investimentos",
+              xpReward: XP.financialGoal, status: "em_andamento" as const,
+              createdBy: userId, createdAt: nowIso, completedAt: null,
+            },
+          ];
+
+      // 2. Create (or upgrade in place) each investment + its first contribution.
+      let investments = [...d.investments];
+      let contributions = [...d.investmentContributions];
+
+      for (const s of specs) {
+        const linkGoal = s.reserve ? goalId : null;
+        const existing = investments.find((i) => i.userId === userId && i.name === s.name);
+        if (existing) {
+          investments = investments.map((i) =>
+            i.id === existing.id
+              ? { ...i, isEmergencyFund: s.reserve, goalId: linkGoal, notes: s.notes, updatedAt: nowIso }
+              : i,
+          );
+        } else {
+          const id = uid("inv");
+          const base: Investment = {
+            id, userId, name: s.name, type: s.type, index: s.index, rate: s.rate,
+            investedAmount: s.amount, currentValue: s.amount, purchaseDate: s.purchase,
+            maturityDate: s.maturity, liquidity: s.liquidity, liquidityDays: null,
+            isEmergencyFund: s.reserve, goalId: linkGoal, notes: s.notes,
+            createdAt: nowIso, updatedAt: nowIso,
+          };
+          const currentValue = calculateCurrentValue(base, [{ amount: s.amount, date: s.purchase }]);
+          investments.push({ ...base, currentValue });
+          contributions.push({
+            id: uid("ic"), investmentId: id, userId, amount: s.amount,
+            date: s.purchase, notes: s.contribNote, createdAt: nowIso,
+          });
+        }
       }
-      return {
-        ...d,
-        investments: [...d.investments, ...newInvestments],
-        investmentContributions: [...d.investmentContributions, ...newContributions],
-      };
+
+      // 3. Goal progress = sum of the linked (reserve) investments' current value.
+      const contribsById = new Map<string, { amount: number; date: string }[]>();
+      contributions.forEach((c) => {
+        const list = contribsById.get(c.investmentId) ?? [];
+        list.push({ amount: c.amount, date: c.date });
+        contribsById.set(c.investmentId, list);
+      });
+      const reserveSum = investments
+        .filter((i) => i.goalId === goalId)
+        .reduce((sum, i) => sum + calculateCurrentValue(i, contribsById.get(i.id)), 0);
+      goals = goals.map((g) =>
+        g.id === goalId
+          ? {
+              ...g,
+              currentAmount: Math.min(RESERVE_TARGET, Math.round(reserveSum)),
+              status: reserveSum >= RESERVE_TARGET ? ("concluida" as const) : ("em_andamento" as const),
+              completedAt: reserveSum >= RESERVE_TARGET ? g.completedAt || nowIso : null,
+            }
+          : g,
+      );
+
+      // 4. Retroactively unlock the "Primeiro Investimento" achievement for Lucas.
+      let userAchievements = d.userAchievements;
+      let users = d.users;
+      const hasFirst = userAchievements.some(
+        (ua) => ua.userId === userId && ua.achievementId === "ach_first_investment",
+      );
+      if (!hasFirst) {
+        userAchievements = [
+          ...userAchievements,
+          { id: uid("ua"), userId, achievementId: "ach_first_investment", unlockedAt: nowIso },
+        ];
+        const ach = d.achievements.find((a) => a.id === "ach_first_investment");
+        if (ach) {
+          users = users.map((u) => {
+            if (u.id !== userId) return u;
+            const nextXp = u.xp + ach.xpReward;
+            return { ...u, xp: nextXp, level: levelFromXp(nextXp).level };
+          });
+        }
+      }
+
+      return { ...d, goals, investments, investmentContributions: contributions, userAchievements, users };
     });
-  }, [userId, data.investments]);
+  }, [userId]);
 
   return {
     investments,
