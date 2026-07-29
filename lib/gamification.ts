@@ -54,6 +54,7 @@ export const XP = {
   streak30: 200,
   investmentContribution: 15,
   patrimonyMilestone: 50,
+  incomeProfileUpdate: 25,
 } as const;
 
 /** XP for completing a task, based on its priority (prompt Fase 2 §2). */

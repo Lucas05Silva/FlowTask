@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { Wallet, ListPlus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Wallet, ListPlus, TrendingUp } from "lucide-react";
 import { useFinance } from "@/hooks/useFinance";
+import { useIncomeProfile } from "@/hooks/useIncomeProfile";
 import { useGamification } from "@/components/providers/GamificationProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -12,12 +13,13 @@ import { ExpenseList } from "./ExpenseList";
 import { DebtList } from "./DebtList";
 import { FinancialGoalList } from "./FinancialGoalList";
 import { FinanceSuggestions } from "./FinanceSuggestions";
+import { MinhaRendaTab } from "./MinhaRendaTab";
 import { FinanceModal } from "./FinanceModal";
 import { DebtModal } from "./DebtModal";
 import { GoalModal } from "./GoalModal";
 import { cn } from "@/lib/utils";
 
-type TabKey = "overview" | "incomes" | "expenses" | "debts" | "goals" | "suggestions";
+type TabKey = "overview" | "incomes" | "expenses" | "debts" | "goals" | "suggestions" | "minharenda";
 
 export function FinancePage() {
   const { celebrate } = useGamification();
@@ -43,6 +45,13 @@ export function FinancePage() {
     getSuggestions,
   } = useFinance();
 
+  const { isLucas, getTotalInvestment, seedIfEmpty } = useIncomeProfile();
+
+  // Seed Lucas's income profile so "capacidade de investimento" is available.
+  useEffect(() => {
+    seedIfEmpty();
+  }, [seedIfEmpty]);
+
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
   // Modals state
@@ -67,14 +76,18 @@ export function FinancePage() {
   const projection = getProjection();
   const suggestions = getSuggestions();
 
-  const tabs = [
+  const tabs: { key: TabKey; label: string; icon?: typeof TrendingUp }[] = [
     { key: "overview", label: "Visão Geral" },
     { key: "incomes", label: "Entradas" },
     { key: "expenses", label: "Saídas" },
     { key: "debts", label: "Dívidas" },
     { key: "goals", label: "Metas" },
     { key: "suggestions", label: "Sugestões" },
-  ] as const;
+    // "Minha Renda" is a personal dashboard — only visible for Lucas.
+    ...(isLucas ? [{ key: "minharenda" as TabKey, label: "Minha Renda", icon: TrendingUp }] : []),
+  ];
+
+  const investmentCapacity = isLucas ? getTotalInvestment() : 0;
 
   // Handlers for finance entries
   const handleOpenFinanceModal = (type: "income" | "expense") => {
@@ -146,25 +159,29 @@ export function FinancePage() {
       {/* Tabs bar internally (scrollable in mobile) */}
       <div className="border-b border-line overflow-x-auto scrollbar-none flex">
         <div className="flex space-x-6 min-w-max pb-px">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className={cn(
-                "relative py-3.5 text-sm font-semibold transition-all border-b-2 hover:text-content",
-                activeTab === tab.key
-                  ? "border-brand text-brand-dark"
-                  : "border-transparent text-muted"
-              )}
-            >
-              {tab.label}
-              {tab.key === "suggestions" && suggestions.length > 1 && (
-                <span className="ml-1.5 rounded-full bg-danger/10 text-danger text-[10px] px-1.5 py-0.5 font-bold">
-                  {suggestions.length}
-                </span>
-              )}
-            </button>
-          ))}
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={cn(
+                  "relative inline-flex items-center gap-1.5 py-3.5 text-sm font-semibold transition-all border-b-2 hover:text-content",
+                  activeTab === tab.key
+                    ? "border-brand text-brand-dark"
+                    : "border-transparent text-muted"
+                )}
+              >
+                {Icon && <Icon className="size-4" aria-hidden />}
+                {tab.label}
+                {tab.key === "suggestions" && suggestions.length > 1 && (
+                  <span className="ml-1.5 rounded-full bg-danger/10 text-danger text-[10px] px-1.5 py-0.5 font-bold">
+                    {suggestions.length}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -178,9 +195,11 @@ export function FinancePage() {
             last6Months={last6Months}
             expensesByCategory={expensesByCategory}
             projection={projection}
+            investmentCapacity={investmentCapacity}
             onOpenModal={handleOpenFinanceModal}
           />
         )}
+        {activeTab === "minharenda" && <MinhaRendaTab />}
         {activeTab === "incomes" && (
           <IncomeList
             entries={finances}

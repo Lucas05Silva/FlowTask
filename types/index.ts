@@ -411,6 +411,41 @@ export interface PatrimonySnapshot {
   snapshotAt: string;
 }
 
+/* --- Minha Renda (Fase 15B) ----------------------------------------------- */
+
+export type IncomeSourceType = "fixo" | "variavel" | "beneficio";
+
+export interface IncomeSource {
+  id: string;
+  label: string;
+  type: IncomeSourceType;
+  amount: number; // monthly value
+  active: boolean;
+  note?: string;
+}
+
+/** Personal income profile (one row per user — id equals userId). */
+export interface IncomeProfile {
+  id: ID; // = userId (singleton per user)
+  userId: ID;
+  sources: IncomeSource[];
+  monthlyExpenses: number;
+  investmentGoalPct: number; // % of fixed income to invest
+  flowsysInvestmentPct: number; // % of the Flowsys source to invest
+  updatedAt: string;
+}
+
+/** A snapshot of total income for a given month (edit history). */
+export interface IncomeHistoryEntry {
+  id: ID;
+  userId: ID;
+  month: string; // "YYYY-MM"
+  totalFixed: number;
+  totalVariable: number;
+  note?: string;
+  createdAt: string;
+}
+
 /** Top-level shape of the mock store persisted to localStorage. */
 export interface FlowTaskData {
   users: User[];
@@ -432,6 +467,8 @@ export interface FlowTaskData {
   investments: Investment[];
   investmentContributions: InvestmentContribution[];
   patrimonySnapshots: PatrimonySnapshot[];
+  incomeProfiles: IncomeProfile[];
+  incomeHistory: IncomeHistoryEntry[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;

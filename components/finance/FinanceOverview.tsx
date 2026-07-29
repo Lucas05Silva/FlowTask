@@ -15,6 +15,7 @@ interface FinanceOverviewProps {
   last6Months: { month: string; label: string; income: number; expense: number }[];
   expensesByCategory: { category: string; amount: number; percentage: number }[];
   projection: { avgIncome: number; avgExpense: number; projectedBalance: number };
+  investmentCapacity?: number;
   onOpenModal: (type: "income" | "expense") => void;
 }
 
@@ -25,6 +26,7 @@ export function FinanceOverview({
   last6Months,
   expensesByCategory,
   projection,
+  investmentCapacity,
   onOpenModal,
 }: FinanceOverviewProps) {
   const [hoveredBar, setHoveredBar] = useState<{ month: string; type: "income" | "expense"; amount: number } | null>(null);
@@ -142,6 +144,15 @@ export function FinanceOverview({
           </div>
         </Card>
       </div>
+
+      {/* Capacidade de investimento (Minha Renda — só Lucas) */}
+      {investmentCapacity !== undefined && investmentCapacity > 0 && (
+        <div className="flex items-center gap-2 rounded-input border border-brand/20 bg-brand/5 px-4 py-2.5 text-sm">
+          <TrendingUp className="size-4 text-brand" />
+          <span className="text-muted">Capacidade de investimento:</span>
+          <span className="font-bold text-brand-dark dark:text-brand-light">{formatBRL(investmentCapacity)}/mês</span>
+        </div>
+      )}
 
       {/* Gráficos */}
       <div className="grid gap-6 lg:grid-cols-2">

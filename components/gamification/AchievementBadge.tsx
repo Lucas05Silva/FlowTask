@@ -17,6 +17,7 @@ import {
   ShieldCheck,
   Repeat,
   Landmark,
+  ClipboardList,
   Lock,
   type LucideIcon,
 } from "lucide-react";
@@ -47,6 +48,7 @@ const ICONS: Record<string, LucideIcon> = {
   ShieldCheck,
   Repeat,
   Landmark,
+  ClipboardList,
 };
 
 export function AchievementBadge({ achievement, unlocked, unlockedAt }: AchievementBadgeProps) {

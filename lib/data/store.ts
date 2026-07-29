@@ -20,7 +20,8 @@ type CollKey =
   | "users" | "tasks" | "events" | "projects" | "finances" | "debts" | "goals"
   | "apartmentItems" | "weddingTasks" | "weddingBudget" | "weddingVendors"
   | "userAchievements" | "notifications" | "taskPrompts" | "notes"
-  | "investments" | "investmentContributions" | "patrimonySnapshots";
+  | "investments" | "investmentContributions" | "patrimonySnapshots"
+  | "incomeProfiles" | "incomeHistory";
 
 /** FlowTaskData array field → Supabase table. */
 const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
@@ -42,6 +43,8 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "investments", table: "investments" },
   { key: "investmentContributions", table: "investment_contributions" },
   { key: "patrimonySnapshots", table: "patrimony_snapshots" },
+  { key: "incomeProfiles", table: "income_profile" },
+  { key: "incomeHistory", table: "income_history" },
 ];
 const WEDDING_CONFIG_TABLE = "wedding_config";
 

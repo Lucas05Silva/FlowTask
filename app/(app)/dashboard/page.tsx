@@ -153,6 +153,23 @@ export default function DashboardPage() {
     return { total, passive: estimateMonthlyPassiveIncome(total), hasAny: mine.length > 0, spark };
   }, [data.investments, data.investmentContributions, data.patrimonySnapshots, user]);
 
+  const income = useMemo(() => {
+    if (!user) return { total: 0, hasProfile: false, deltaPct: null as number | null };
+    const profile = (data.incomeProfiles || []).find((p) => p.userId === user.id);
+    if (!profile) return { total: 0, hasProfile: false, deltaPct: null };
+    const total = profile.sources.filter((s) => s.active).reduce((s, x) => s + x.amount, 0);
+    const hist = (data.incomeHistory || [])
+      .filter((h) => h.userId === user.id)
+      .sort((a, b) => b.month.localeCompare(a.month));
+    let deltaPct: number | null = null;
+    if (hist.length >= 2) {
+      const cur = hist[0].totalFixed + hist[0].totalVariable;
+      const prev = hist[1].totalFixed + hist[1].totalVariable;
+      if (prev > 0) deltaPct = Math.round(((cur - prev) / prev) * 100);
+    }
+    return { total, hasProfile: true, deltaPct };
+  }, [data.incomeProfiles, data.incomeHistory, user]);
+
   const recentNotes = useMemo(() => {
     if (!user) return [];
     return (data.notes || [])
@@ -229,8 +246,8 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* Patrimônio investido */}
-      <motion.div variants={item}>
+      {/* Patrimônio investido + Renda mensal (Renda só p/ Lucas) */}
+      <motion.div variants={item} className={income.hasProfile ? "grid gap-4 lg:grid-cols-2" : ""}>
         <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <span
@@ -276,6 +293,39 @@ export default function DashboardPage() {
             </Link>
           </div>
         </Card>
+
+        {income.hasProfile && (
+          <Card className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span
+                className="grid size-12 shrink-0 place-items-center rounded-input"
+                style={{ backgroundColor: "color-mix(in srgb, var(--info) 16%, transparent)", color: "var(--info)" }}
+              >
+                <Wallet className="size-6" aria-hidden />
+              </span>
+              <div>
+                <p className="text-sm text-muted">Renda mensal</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold text-content">{formatBRL(income.total)}</p>
+                  {income.deltaPct !== null && income.deltaPct !== 0 && (
+                    <span
+                      className={`inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[11px] font-bold ${
+                        income.deltaPct > 0 ? "bg-success/10 text-success" : "bg-danger/10 text-danger"
+                      }`}
+                    >
+                      {income.deltaPct > 0 ? <ArrowUpRight className="size-3" /> : <ArrowDownRight className="size-3" />}
+                      {Math.abs(income.deltaPct)}%
+                    </span>
+                  )}
+                </div>
+                <p className="mt-0.5 text-xs text-muted">vs. mês anterior</p>
+              </div>
+            </div>
+            <Link href="/financeiro" className="shrink-0 text-sm font-medium text-brand hover:underline">
+              Ver
+            </Link>
+          </Card>
+        )}
       </motion.div>
 
       {/* Hoje + Ranking */}
