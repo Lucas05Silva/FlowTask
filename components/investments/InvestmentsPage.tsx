@@ -20,12 +20,11 @@ import { EmergencyFundBanner } from "./EmergencyFundBanner";
 import { InvestmentOverview } from "./InvestmentOverview";
 import { InvestmentList } from "./InvestmentList";
 import { ContributionsTimeline } from "./ContributionsTimeline";
-import { ProjectionTab } from "./ProjectionTab";
 import { InvestmentModal } from "./InvestmentModal";
 import { ContributionModal } from "./ContributionModal";
 import { formatBRL, cn } from "@/lib/utils";
 
-type TabKey = "overview" | "investments" | "contributions" | "projection";
+type TabKey = "overview" | "investments" | "contributions";
 
 const DISCLAIMER =
   "Os valores exibidos são estimativas baseadas em taxas de referência de mercado. Rentabilidade passada não garante resultados futuros. Este módulo é apenas informativo e não constitui recomendação de investimento.";
@@ -134,7 +133,6 @@ export function InvestmentsPage() {
     { key: "overview", label: "Visão Geral" },
     { key: "investments", label: "Meus Investimentos" },
     { key: "contributions", label: "Aportes" },
-    { key: "projection", label: "Projeção" },
   ] as const;
 
   const openCreate = () => {
@@ -269,9 +267,6 @@ export function InvestmentsPage() {
             onCreateAvulso={() => openContribution(null)}
             onDelete={deleteContribution}
           />
-        )}
-        {activeTab === "projection" && (
-          <ProjectionTab currentValue={totalCurrent} />
         )}
       </div>
 
