@@ -16,6 +16,7 @@ interface FinanceOverviewProps {
   expensesByCategory: { category: string; amount: number; percentage: number }[];
   projection: { avgIncome: number; avgExpense: number; projectedBalance: number };
   investmentCapacity?: number;
+  fixedExpenses?: number;
   onOpenModal: (type: "income" | "expense") => void;
 }
 
@@ -27,6 +28,7 @@ export function FinanceOverview({
   expensesByCategory,
   projection,
   investmentCapacity,
+  fixedExpenses,
   onOpenModal,
 }: FinanceOverviewProps) {
   const [hoveredBar, setHoveredBar] = useState<{ month: string; type: "income" | "expense"; amount: number } | null>(null);
@@ -145,12 +147,20 @@ export function FinanceOverview({
         </Card>
       </div>
 
-      {/* Capacidade de investimento (Minha Renda — só Lucas) */}
+      {/* Renda / gastos / capacidade (Minha Renda — só Lucas) */}
       {investmentCapacity !== undefined && investmentCapacity > 0 && (
-        <div className="flex items-center gap-2 rounded-input border border-brand/20 bg-brand/5 px-4 py-2.5 text-sm">
-          <TrendingUp className="size-4 text-brand" />
-          <span className="text-muted">Capacidade de investimento:</span>
-          <span className="font-bold text-brand-dark dark:text-brand-light">{formatBRL(investmentCapacity)}/mês</span>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 rounded-input border border-brand/20 bg-brand/5 px-4 py-2.5 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <TrendingUp className="size-4 text-brand" />
+            <span className="text-muted">Capacidade de investimento:</span>
+            <span className="font-bold text-brand-dark dark:text-brand-light">{formatBRL(investmentCapacity)}/mês</span>
+          </span>
+          {fixedExpenses !== undefined && fixedExpenses > 0 && (
+            <span className="inline-flex items-center gap-2">
+              <span className="text-muted">Gastos fixos mensais:</span>
+              <span className="font-bold text-content">{formatBRL(fixedExpenses)}/mês</span>
+            </span>
+          )}
         </div>
       )}
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Wallet, ListPlus, TrendingUp } from "lucide-react";
 import { useFinance } from "@/hooks/useFinance";
 import { useIncomeProfile } from "@/hooks/useIncomeProfile";
+import { useMonthlyExpenses } from "@/hooks/useMonthlyExpenses";
 import { useGamification } from "@/components/providers/GamificationProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
@@ -46,11 +47,13 @@ export function FinancePage() {
   } = useFinance();
 
   const { isLucas, getTotalInvestment, seedIfEmpty } = useIncomeProfile();
+  const { getTotalExpenses, seedIfEmpty: seedExpenses } = useMonthlyExpenses();
 
-  // Seed Lucas's income profile so "capacidade de investimento" is available.
+  // Seed Lucas's income profile + expenses so the overview figures are available.
   useEffect(() => {
     seedIfEmpty();
-  }, [seedIfEmpty]);
+    seedExpenses();
+  }, [seedIfEmpty, seedExpenses]);
 
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
 
@@ -88,6 +91,7 @@ export function FinancePage() {
   ];
 
   const investmentCapacity = isLucas ? getTotalInvestment() : 0;
+  const fixedExpensesTotal = isLucas ? getTotalExpenses() : 0;
 
   // Handlers for finance entries
   const handleOpenFinanceModal = (type: "income" | "expense") => {
@@ -196,6 +200,7 @@ export function FinancePage() {
             expensesByCategory={expensesByCategory}
             projection={projection}
             investmentCapacity={investmentCapacity}
+            fixedExpenses={fixedExpensesTotal}
             onOpenModal={handleOpenFinanceModal}
           />
         )}

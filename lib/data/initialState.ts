@@ -26,6 +26,7 @@ export const ACHIEVEMENTS: FlowTaskData["achievements"] = [
   { id: "ach_patrimony_50k", key: "patrimonio_50k", title: "Patrimônio 50k", description: "R$ 50.000 investidos", icon: "Landmark", xpReward: 150 },
   { id: "ach_patrimony_100k", key: "patrimonio_100k", title: "Patrimônio 100k", description: "R$ 100.000 investidos", icon: "Landmark", xpReward: 200 },
   { id: "ach_income_plan", key: "plano_tracado", title: "Plano traçado", description: "Perfil de renda e meta de investimento definidos", icon: "ClipboardList", xpReward: 60 },
+  { id: "ach_organized", key: "organizado", title: "Organizado", description: "5+ gastos mensais cadastrados", icon: "ListChecks", xpReward: 60 },
 ];
 
 function freshUser(u: (typeof KNOWN_USERS)[number], createdAt: string): User {
@@ -70,6 +71,7 @@ export function emptyState(): FlowTaskData {
     patrimonySnapshots: [],
     incomeProfiles: [],
     incomeHistory: [],
+    monthlyExpenses: [],
     weddingDate: null,
     weddingVenueName: null,
     weddingVenueAddress: null,

@@ -164,18 +164,10 @@ export function IncomeProfileModal({ open, initial, onClose, onSave }: IncomePro
           <Label className="mb-2 block text-xs font-bold uppercase tracking-wider text-muted">
             Configurações de investimento
           </Label>
-          <div className="grid gap-3 sm:grid-cols-3">
-            <div>
-              <Label htmlFor="inc-expenses" className="text-[11px]">
-                Gastos mensais
-              </Label>
-              <CurrencyInput
-                id="inc-expenses"
-                value={form.monthlyExpenses}
-                onChange={(v) => setForm((f) => ({ ...f, monthlyExpenses: v }))}
-                className="h-9 text-sm"
-              />
-            </div>
+          <p className="mb-3 text-[11px] text-muted">
+            Os gastos mensais agora são gerenciados no painel “Meus Gastos Mensais”.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <Label htmlFor="inc-goal" className="text-[11px]">
                 Meta de investimento (%)

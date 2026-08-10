@@ -14,15 +14,18 @@ import {
   ChevronDown,
   ArrowRight,
   Coins,
+  AlertTriangle,
 } from "lucide-react";
 import type { IncomeSource } from "@/types";
 import { useIncomeProfile } from "@/hooks/useIncomeProfile";
 import { useInvestments } from "@/hooks/useInvestments";
+import { useMonthlyExpenses } from "@/hooks/useMonthlyExpenses";
 import { useGamification } from "@/components/providers/GamificationProvider";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { IncomeProfileModal } from "./IncomeProfileModal";
+import { ExpensesPanel } from "./ExpensesPanel";
 import {
   projectFutureValue,
   estimateMonthlyPassiveIncome,
@@ -58,37 +61,37 @@ export function MinhaRendaTab() {
     investmentGoalPct,
     flowsysInvestmentPct,
     getFixedIncome,
-    getVariableIncome,
     getTotalIncome,
     getFlowsysContribution,
     getMonthlyInvestment,
     getTotalInvestment,
-    getSurplus,
     seedIfEmpty,
     saveProfile,
   } = useIncomeProfile();
   const { getEmergencyFundTotal, getTotalCurrentValue } = useInvestments();
+  const { getTotalExpenses, seedIfEmpty: seedExpenses } = useMonthlyExpenses();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
 
   useEffect(() => {
     seedIfEmpty();
-  }, [seedIfEmpty]);
+    seedExpenses();
+  }, [seedIfEmpty, seedExpenses]);
 
   const fixedIncome = getFixedIncome();
-  const variableIncome = getVariableIncome();
   const totalIncome = getTotalIncome();
   const monthlyInvestment = getMonthlyInvestment();
   const flowsysContribution = getFlowsysContribution();
   const totalInvestment = getTotalInvestment();
-  const surplus = getSurplus();
+  const totalExpenses = getTotalExpenses(); // dynamic — soma dos gastos recorrentes ativos
+  const surplus = fixedIncome - totalExpenses - totalInvestment;
 
   // Allocation of the fixed income (base garantida).
   const alloc = useMemo(() => {
     const base = Math.max(fixedIncome, 1);
     const invest = totalInvestment;
-    const spend = monthlyExpenses;
+    const spend = totalExpenses;
     const free = Math.max(0, surplus);
     return {
       base: fixedIncome,
@@ -99,7 +102,7 @@ export function MinhaRendaTab() {
       spendPct: Math.round((spend / base) * 100),
       freePct: Math.round((free / base) * 100),
     };
-  }, [fixedIncome, totalInvestment, monthlyExpenses, surplus]);
+  }, [fixedIncome, totalInvestment, totalExpenses, surplus]);
 
   // Emergency fund (from the Investimentos module).
   const reserveCurrent = getEmergencyFundTotal();
@@ -136,15 +139,15 @@ export function MinhaRendaTab() {
   };
 
   const kpis = [
-    { label: "Renda fixa", value: formatBRL(fixedIncome), hint: "Salário + Flowsys", color: "var(--info)" },
-    { label: "Renda variável", value: formatBRL(variableIncome), hint: "Estágio por horas", color: "var(--warning)", badge: "VARIÁVEL" },
-    { label: "Investindo/mês", value: formatBRL(totalInvestment), hint: `${investmentGoalPct}% fixo + ${flowsysInvestmentPct}% Flowsys`, color: "var(--brand-purple)" },
+    { label: "Renda fixa", value: formatBRL(fixedIncome), hint: "Salário + Flowsys", alert: false },
+    { label: "Gastos/mês", value: formatBRL(totalExpenses), hint: "Soma dos gastos recorrentes", alert: false },
+    { label: "Investindo/mês", value: formatBRL(totalInvestment), hint: `${investmentGoalPct}% fixo + ${flowsysInvestmentPct}% Flowsys`, alert: false },
     {
-      label: "Sobra estimada",
+      label: "Sobra",
       value: formatBRL(surplus),
       hint: "Renda − gastos − investimento",
-      color: surplus >= 0 ? "var(--success)" : "var(--danger)",
       valueColor: surplus >= 0 ? "text-success" : "text-danger",
+      alert: surplus < 0,
     },
   ];
 
@@ -168,14 +171,10 @@ export function MinhaRendaTab() {
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {kpis.map((k) => (
-          <Card key={k.label} className="flex flex-col gap-1.5">
+          <Card key={k.label} className={cn("flex flex-col gap-1.5", k.alert && "border-danger/40")}>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-muted sm:text-sm">{k.label}</span>
-              {k.badge && (
-                <Badge color="var(--warning)" className="text-[9px] uppercase">
-                  {k.badge}
-                </Badge>
-              )}
+              {k.alert && <AlertTriangle className="size-4 text-danger" />}
             </div>
             <p className={cn("text-lg font-bold sm:text-2xl", k.valueColor ?? "text-content")}>{k.value}</p>
             <p className="text-[11px] text-muted">{k.hint}</p>
@@ -244,11 +243,21 @@ export function MinhaRendaTab() {
           <CardTitle className="mb-1 text-base">Onde vai sua renda</CardTitle>
           <p className="mb-4 text-xs text-muted">Alocação da base garantida ({formatBRL(fixedIncome)})</p>
 
-          <div className="flex h-4 w-full overflow-hidden rounded-full bg-panel">
-            <div style={{ width: `${alloc.investPct}%`, backgroundColor: "var(--brand-purple)" }} title="Investimentos" />
-            <div style={{ width: `${alloc.spendPct}%`, backgroundColor: "var(--cat-financeiro)" }} title="Gastos" />
-            <div style={{ width: `${alloc.freePct}%`, backgroundColor: "var(--success)" }} title="Sobra" />
-          </div>
+          {surplus < 0 ? (
+            <div className="flex items-start gap-2 rounded-input border border-danger/40 bg-danger/5 p-3">
+              <AlertTriangle className="mt-0.5 size-4 shrink-0 text-danger" />
+              <p className="text-xs leading-relaxed text-danger">
+                Seus gastos + investimentos ({formatBRL(totalExpenses + totalInvestment)}) superam sua renda fixa (
+                {formatBRL(fixedIncome)}). Revise seus gastos ou ajuste a meta de investimento.
+              </p>
+            </div>
+          ) : (
+            <div className="flex h-4 w-full overflow-hidden rounded-full bg-panel">
+              <div style={{ width: `${alloc.investPct}%`, backgroundColor: "var(--brand-purple)" }} title="Investimentos" />
+              <div style={{ width: `${alloc.spendPct}%`, backgroundColor: "var(--cat-financeiro)" }} title="Gastos" />
+              <div style={{ width: `${alloc.freePct}%`, backgroundColor: "var(--success)" }} title="Sobra" />
+            </div>
+          )}
 
           <div className="mt-4 space-y-2.5">
             <AllocRow color="var(--brand-purple)" label="Investimentos" pct={alloc.investPct} value={alloc.invest} />
@@ -257,6 +266,9 @@ export function MinhaRendaTab() {
           </div>
         </Card>
       </div>
+
+      {/* Meus Gastos Mensais */}
+      <ExpensesPanel availableIncome={fixedIncome} />
 
       {/* Regras de ouro */}
       <div>

@@ -429,9 +429,44 @@ export interface IncomeProfile {
   id: ID; // = userId (singleton per user)
   userId: ID;
   sources: IncomeSource[];
-  monthlyExpenses: number;
+  monthlyExpenses: number; // legacy fixed value — expenses are now itemized (see MonthlyExpense)
   investmentGoalPct: number; // % of fixed income to invest
   flowsysInvestmentPct: number; // % of the Flowsys source to invest
+  showExpensesDetail?: boolean;
+  updatedAt: string;
+}
+
+/* --- Gastos mensais (Fase 15C) -------------------------------------------- */
+
+export type MonthlyExpenseCategory =
+  | "moradia"
+  | "alimentacao"
+  | "transporte"
+  | "saude"
+  | "educacao"
+  | "lazer"
+  | "cartao"
+  | "financiamento"
+  | "assinatura"
+  | "investimento"
+  | "outro";
+
+export type ExpenseRecurrence = "mensal" | "parcelado" | "eventual";
+
+/** An itemized monthly expense in the personal budget. */
+export interface MonthlyExpense {
+  id: ID;
+  userId: ID;
+  name: string;
+  category: MonthlyExpenseCategory;
+  amount: number;
+  recurrence: ExpenseRecurrence;
+  installmentsTotal?: number | null;
+  installmentsPaid: number;
+  dueDay?: number | null; // 1–31
+  isActive: boolean;
+  notes?: string;
+  createdAt: string;
   updatedAt: string;
 }
 
@@ -469,6 +504,7 @@ export interface FlowTaskData {
   patrimonySnapshots: PatrimonySnapshot[];
   incomeProfiles: IncomeProfile[];
   incomeHistory: IncomeHistoryEntry[];
+  monthlyExpenses: MonthlyExpense[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;

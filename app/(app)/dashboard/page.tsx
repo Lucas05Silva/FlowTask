@@ -27,6 +27,7 @@ import { Ranking } from "@/components/gamification/Ranking";
 import { CATEGORY_META, PRIORITY_META } from "@/lib/constants";
 import { currentMonthTotals, lastMonths } from "@/lib/finance-utils";
 import { calculateCurrentValue, estimateMonthlyPassiveIncome } from "@/lib/investment-calculator";
+import { daysUntilDueDay } from "@/hooks/useMonthlyExpenses";
 import {
   todayISO,
   daysUntil,
@@ -170,6 +171,25 @@ export default function DashboardPage() {
     return { total, hasProfile: true, deltaPct };
   }, [data.incomeProfiles, data.incomeHistory, user]);
 
+  const bills = useMemo(() => {
+    if (!user) return { count: 0, total: 0, dueToday: 0, show: false };
+    const list = (data.monthlyExpenses || []).filter(
+      (e) => e.userId === user.id && e.isActive && e.recurrence !== "eventual",
+    );
+    let count = 0;
+    let total = 0;
+    let dueToday = 0;
+    for (const e of list) {
+      const d = daysUntilDueDay(e.dueDay);
+      if (d !== null && d >= 0 && d <= 7) {
+        count++;
+        total += e.amount;
+        if (d === 0) dueToday++;
+      }
+    }
+    return { count, total, dueToday, show: count > 0 };
+  }, [data.monthlyExpenses, user]);
+
   const recentNotes = useMemo(() => {
     if (!user) return [];
     return (data.notes || [])
@@ -246,8 +266,11 @@ export default function DashboardPage() {
         />
       </motion.div>
 
-      {/* Patrimônio investido + Renda mensal (Renda só p/ Lucas) */}
-      <motion.div variants={item} className={income.hasProfile ? "grid gap-4 lg:grid-cols-2" : ""}>
+      {/* Patrimônio investido + Renda mensal + Contas a vencer (Renda/contas só p/ Lucas) */}
+      <motion.div
+        variants={item}
+        className={bills.show ? "grid gap-4 lg:grid-cols-3" : income.hasProfile ? "grid gap-4 lg:grid-cols-2" : ""}
+      >
         <Card className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-4">
             <span
@@ -319,6 +342,39 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-muted">vs. mês anterior</p>
+              </div>
+            </div>
+            <Link href="/financeiro" className="shrink-0 text-sm font-medium text-brand hover:underline">
+              Ver
+            </Link>
+          </Card>
+        )}
+
+        {bills.show && (
+          <Card className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <span
+                className="grid size-12 shrink-0 place-items-center rounded-input"
+                style={{
+                  backgroundColor: `color-mix(in srgb, ${bills.dueToday > 0 ? "var(--danger)" : "var(--warning)"} 16%, transparent)`,
+                  color: bills.dueToday > 0 ? "var(--danger)" : "var(--warning)",
+                }}
+              >
+                <CalendarClock className="size-6" aria-hidden />
+              </span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm text-muted">Contas a vencer (7 dias)</p>
+                  {bills.dueToday > 0 && (
+                    <span className="rounded-full bg-danger/10 px-1.5 py-0.5 text-[10px] font-bold text-danger">
+                      {bills.dueToday} hoje
+                    </span>
+                  )}
+                </div>
+                <p className="text-2xl font-bold text-content">{formatBRL(bills.total)}</p>
+                <p className="mt-0.5 text-xs text-muted">
+                  {bills.count} {bills.count === 1 ? "conta" : "contas"}
+                </p>
               </div>
             </div>
             <Link href="/financeiro" className="shrink-0 text-sm font-medium text-brand hover:underline">
