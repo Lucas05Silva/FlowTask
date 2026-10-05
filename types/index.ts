@@ -78,19 +78,6 @@ export interface Task {
   completedAt: string | null;
 }
 
-export interface CalendarEvent {
-  id: ID;
-  title: string;
-  startDatetime: string;
-  endDatetime: string;
-  category: Category;
-  location: string | null;
-  notes: string | null;
-  isAllDay: boolean;
-  createdBy: ID;
-  createdAt: string;
-}
-
 export type StepStatus = "pendente" | "concluido";
 
 export interface ProjectStep {
@@ -209,32 +196,6 @@ export interface Goal {
   contributionValuePerTask?: number;
 }
 
-export type Room =
-  | "sala"
-  | "quarto"
-  | "cozinha"
-  | "banheiro"
-  | "lavanderia"
-  | "escritorio";
-
-export type ItemPriority = "essencial" | "importante" | "desejavel";
-export type ItemStatus = "pesquisando" | "orcado" | "comprado" | "entregue";
-
-export interface ApartmentItem {
-  id: ID;
-  room: string;
-  name: string;
-  estimatedCost: number;
-  actualCost: number | null;
-  priority: ItemPriority;
-  status: ItemStatus;
-  purchaseDeadline: string | null;
-  storeLink: string | null;
-  notes: string;
-  createdBy: ID;
-  createdAt: string;
-}
-
 export interface WeddingTask {
   id: ID;
   title: string;
@@ -282,28 +243,6 @@ export interface UserAchievement {
   userId: ID;
   achievementId: ID;
   unlockedAt: string;
-}
-
-export type NotificationType =
-  | "prazo"
-  | "atrasado"
-  | "divida"
-  | "meta"
-  | "conquista"
-  | "levelup"
-  | "streak"
-  | "info";
-
-export interface AppNotification {
-  id: ID;
-  userId: ID;
-  type: NotificationType;
-  title: string;
-  message: string;
-  isRead: boolean;
-  link?: string;
-  icon?: string;
-  createdAt: string;
 }
 
 /* --- Task Prompts (Cofre de Prompts, Fase 11) --- */
@@ -485,18 +424,15 @@ export interface IncomeHistoryEntry {
 export interface FlowTaskData {
   users: User[];
   tasks: Task[];
-  events: CalendarEvent[];
   projects: Project[];
   finances: FinanceEntry[];
   debts: Debt[];
   goals: Goal[];
-  apartmentItems: ApartmentItem[];
   weddingTasks: WeddingTask[];
   weddingBudget: WeddingBudgetItem[];
   weddingVendors: WeddingVendor[];
   achievements: Achievement[];
   userAchievements: UserAchievement[];
-  notifications: AppNotification[];
   taskPrompts: TaskPrompt[];
   notes: Note[];
   investments: Investment[];

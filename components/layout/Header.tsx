@@ -7,7 +7,6 @@ import { Search, LogOut, User as UserIcon } from "lucide-react";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { Logo } from "@/components/Logo";
 import { Avatar } from "@/components/ui/Avatar";
-import { NotificationBell } from "@/components/notifications/NotificationBell";
 import { ThemeToggle } from "./ThemeToggle";
 
 function useClickOutside<T extends HTMLElement>(onOutside: () => void) {
@@ -48,8 +47,6 @@ export function Header() {
 
       <div className="ml-auto flex items-center gap-1">
         <ThemeToggle />
-
-        <NotificationBell />
 
         {/* Profile */}
         <div className="relative" ref={menuRef}>

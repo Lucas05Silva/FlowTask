@@ -47,7 +47,6 @@ export const XP = {
   financeEntry: 5,
   debtPaid: 100,
   financialGoal: 150,
-  apartmentItem: 20,
   weddingTask: 20,
   weddingVendor: 30,
   streak7: 50,
@@ -115,7 +114,6 @@ export function evaluateAchievements(data: FlowTaskData, userId: string): string
   check("ach_month", user.streakCount >= 30);
   check("ach_client", completedProjects >= 1);
   check("ach_machine", completedProjects >= 10);
-  check("ach_nest", data.apartmentItems.length > 0 && data.apartmentItems.every((i) => i.status === "comprado" || i.status === "entregue"));
   check("ach_iaccept", data.weddingTasks.length > 0 && data.weddingTasks.every((t) => t.status === "concluida"));
   // "Casal produtivo" — both users at the same level
   const [a, b] = data.users;

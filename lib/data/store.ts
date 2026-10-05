@@ -17,9 +17,9 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
  */
 
 type CollKey =
-  | "users" | "tasks" | "events" | "projects" | "finances" | "debts" | "goals"
-  | "apartmentItems" | "weddingTasks" | "weddingBudget" | "weddingVendors"
-  | "userAchievements" | "notifications" | "taskPrompts" | "notes"
+  | "users" | "tasks" | "projects" | "finances" | "debts" | "goals"
+  | "weddingTasks" | "weddingBudget" | "weddingVendors"
+  | "userAchievements" | "taskPrompts" | "notes"
   | "investments" | "investmentContributions" | "patrimonySnapshots"
   | "incomeProfiles" | "incomeHistory" | "monthlyExpenses";
 
@@ -27,17 +27,14 @@ type CollKey =
 const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "users", table: "users", noDelete: true },
   { key: "tasks", table: "tasks" },
-  { key: "events", table: "calendar_events" },
   { key: "projects", table: "projects" },
   { key: "finances", table: "finances_entries" },
   { key: "debts", table: "debts" },
   { key: "goals", table: "goals" },
-  { key: "apartmentItems", table: "apartment_items" },
   { key: "weddingTasks", table: "wedding_tasks" },
   { key: "weddingBudget", table: "wedding_budget" },
   { key: "weddingVendors", table: "wedding_vendors" },
   { key: "userAchievements", table: "user_achievements" },
-  { key: "notifications", table: "notifications" },
   { key: "taskPrompts", table: "task_prompts" },
   { key: "notes", table: "notes" },
   { key: "investments", table: "investments" },

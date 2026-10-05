@@ -30,7 +30,6 @@ import { StreakCounter } from "@/components/gamification/StreakCounter";
 import { XPBar } from "@/components/gamification/XPBar";
 import { AchievementBadge } from "@/components/gamification/AchievementBadge";
 import { Ranking } from "@/components/gamification/Ranking";
-import { NotificationPrefsCard } from "@/components/notifications/NotificationPrefsCard";
 import { formatDate } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
@@ -252,9 +251,6 @@ export default function PerfilPage() {
               ))}
             </div>
           </Card>
-
-          {/* NOTIFICATION PREFERENCES */}
-          <NotificationPrefsCard />
 
           {/* DANGER ZONE — wipe all data */}
           <Card className="p-5 border-dashed border-danger/30">

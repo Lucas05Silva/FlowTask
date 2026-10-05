@@ -33,7 +33,6 @@ import {
   daysUntil,
   countdownLabel,
   formatBRL,
-  formatDate,
   pct,
   relativeTime,
 } from "@/lib/utils";
@@ -63,14 +62,6 @@ export default function DashboardPage() {
     [data.tasks, today],
   );
 
-  const todayEvents = useMemo(
-    () =>
-      data.events
-        .filter((e) => e.startDatetime.slice(0, 10) === today)
-        .sort((a, b) => a.startDatetime.localeCompare(b.startDatetime)),
-    [data.events, today],
-  );
-
   const week = useMemo(() => {
     const days: { iso: string; label: string; weekday: string; items: { title: string; category: string }[] }[] = [];
     for (let i = 0; i < 7; i++) {
@@ -81,18 +72,15 @@ export default function DashboardPage() {
       const tasks = data.tasks
         .filter((t) => t.dueDate === isoKey && t.status !== "concluida")
         .map((t) => ({ title: t.title, category: t.category }));
-      const events = data.events
-        .filter((e) => e.startDatetime.slice(0, 10) === isoKey)
-        .map((e) => ({ title: e.title, category: e.category }));
       days.push({
         iso: isoKey,
         label: String(d.getDate()),
         weekday: d.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", ""),
-        items: [...tasks, ...events],
+        items: [...tasks],
       });
     }
     return days;
-  }, [data.tasks, data.events]);
+  }, [data.tasks]);
 
   const activeProjects = useMemo(
     () =>
@@ -120,11 +108,6 @@ export default function DashboardPage() {
         .slice(0, 3),
     [data.goals],
   );
-
-  const apartmentItems = data.apartmentItems || [];
-  const apTotal = apartmentItems.length;
-  const apCompleted = apartmentItems.filter((i) => i.status === "comprado" || i.status === "entregue").length;
-  const apPercentage = apTotal > 0 ? Math.round((apCompleted / apTotal) * 100) : 0;
 
   const weddingDate = data.weddingDate || null;
   const weddingDays = weddingDate ? daysUntil(weddingDate) : null;
@@ -394,17 +377,10 @@ export default function DashboardPage() {
                 Ver tudo
               </Link>
             </CardHeader>
-            {todayTasks.length === 0 && todayEvents.length === 0 ? (
+            {todayTasks.length === 0 ? (
               <EmptyState icon={ListChecks} title="Agenda livre por hoje!" description="Aproveite ou adiante algo da semana 😉" />
             ) : (
               <ul className="space-y-2">
-                {todayEvents.map((e) => (
-                  <li key={e.id} className="flex items-center gap-3 rounded-input border border-line p-3">
-                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_META[e.category].color }} />
-                    <span className="flex-1 truncate text-sm font-medium text-content">{e.title}</span>
-                    <Badge>{e.isAllDay ? "Dia todo" : formatDate(e.startDatetime, { hour: "2-digit", minute: "2-digit" })}</Badge>
-                  </li>
-                ))}
                 {todayTasks.map((t) => (
                   <li key={t.id} className="flex items-center gap-3 rounded-input border border-line p-3">
                     <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_META[t.category].color }} />
@@ -470,20 +446,6 @@ export default function DashboardPage() {
                   <ProgressBar value={pct(g.currentAmount, g.targetAmount)} />
                 </div>
               ))}
-            </div>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Apartamento 🏠</CardTitle>
-              <Link href="/apartamento" className="text-sm font-medium text-brand hover:underline">Ver</Link>
-            </CardHeader>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-muted">{apCompleted} de {apTotal} itens</span>
-                <span className="font-bold text-brand">{apPercentage}% comprado</span>
-              </div>
-              <ProgressBar value={apPercentage} />
             </div>
           </Card>
 

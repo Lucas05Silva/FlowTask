@@ -6,7 +6,6 @@ import type { CelebrationResult } from "@/lib/gamification";
 import type { Goal } from "@/types";
 import { fireConfetti, fireBigConfetti } from "@/lib/confetti";
 import { useToast } from "./ToastProvider";
-import { useNotifications } from "@/hooks/useNotifications";
 import { LevelUpModal } from "@/components/gamification/LevelUpModal";
 import { GoalCompleteModal } from "@/components/gamification/GoalCompleteModal";
 
@@ -20,7 +19,6 @@ const GamificationContext = createContext<GamificationContextValue | null>(null)
 export function GamificationProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const { toast } = useToast();
-  const { addNotification } = useNotifications();
   const [levelUp, setLevelUp] = useState<{ level: number; title: string } | null>(null);
   const [completedGoal, setCompletedGoal] = useState<Goal | null>(null);
 
@@ -53,12 +51,6 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
       // 2. Goal Complete Celebration
       if (result.completedGoal) {
         setCompletedGoal(result.completedGoal);
-        addNotification({
-          type: "conquista",
-          title: `Meta Concluída: ${result.completedGoal.title}`,
-          message: `🏆 Vocês concluíram a meta "${result.completedGoal.title}"! +${result.completedGoal.xpReward} XP.`,
-          link: "/metas",
-        });
       }
 
       // 3. Achievements Toasts
@@ -67,28 +59,15 @@ export function GamificationProvider({ children }: { children: ReactNode }) {
           () => toast({ variant: "achievement", title: `Conquista: ${ach.title}`, description: ach.description }),
           (i + 1) * 350,
         );
-        // Persist a real-time notification (title includes the achievement name for dedup).
-        addNotification({
-          type: "conquista",
-          title: `Conquista: ${ach.title}`,
-          message: `🏆 Você desbloqueou "${ach.title}"!`,
-          link: "/perfil",
-        });
       });
 
       // 4. Level Up Celebration
       if (result.leveledUp) {
         void fireBigConfetti();
         setLevelUp({ level: result.newLevel, title: result.newTitle });
-        addNotification({
-          type: "levelup",
-          title: `Nível ${result.newLevel} alcançado`,
-          message: `⬆️ Parabéns! Você subiu para o Nível ${result.newLevel} — ${result.newTitle}!`,
-          link: "/perfil",
-        });
       }
     },
-    [toast, addNotification],
+    [toast],
   );
 
   return (
