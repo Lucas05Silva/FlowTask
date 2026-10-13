@@ -301,6 +301,7 @@ export type InvestmentType =
   | "acao"
   | "crypto"
   | "poupanca"
+  | "exterior"
   | "outro";
 
 /** Yield indexer. */
@@ -308,14 +309,20 @@ export type IndexType = "selic" | "ipca" | "cdi" | "prefixado" | "nenhum";
 
 export type InvestmentLiquidity = "diaria" | "no_vencimento" | "carencia";
 
-/** A single investment position owned by a user (Lucas/Thaiane independent). */
+/** Risk level of an investment position. */
+export type RiskLevel = "baixo" | "medio" | "alto";
+
+/** Who a contribution is attributed to (shared portfolio). */
+export type Contributor = "lucas" | "thaiane" | "ambos";
+
+/** A single investment position in the shared couple portfolio. */
 export interface Investment {
   id: ID;
-  userId: ID; // owner
-  name: string; // ex: "Tesouro Selic 2027", "CDB Nubank"
+  userId: ID; // who created the record (audit; portfolio is shared)
+  name: string; // ex: "Tesouro Selic 2031", "Caixinha Nubank"
   type: InvestmentType;
   index: IndexType;
-  rate: number; // extra rate (ex: IPCA + 6.5 → rate = 6.5)
+  rate: number; // extra rate (ex: IPCA + 6.5 → rate = 6.5; CDB → 100 = 100% do CDI)
   investedAmount: number; // total contributed (sum of contributions)
   currentValue: number; // estimated current value (auto-calculated)
   purchaseDate: string; // date of the first contribution (yyyy-mm-dd)
@@ -324,6 +331,11 @@ export interface Investment {
   liquidityDays?: number | null; // carência in days (if applicable)
   isEmergencyFund: boolean; // part of the emergency reserve
   goalId?: ID | null; // linked Metas goal (optional)
+  institution?: string; // ex: "Tesouro Nacional", "Nubank"
+  allocationPercent?: number | null; // target monthly allocation (60 / 15 / 25)
+  unitPrice?: number | null; // price per cota/unit (ex: 199.43)
+  riskLevel?: RiskLevel | null;
+  isPlaceholder?: boolean; // reserved vehicle not defined yet (ex: Exterior)
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -333,7 +345,8 @@ export interface Investment {
 export interface InvestmentContribution {
   id: ID;
   investmentId: ID;
-  userId: ID;
+  userId: ID; // who recorded it
+  contributor?: Contributor; // who the money is attributed to
   amount: number;
   date: string; // yyyy-mm-dd
   notes?: string;

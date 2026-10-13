@@ -5,6 +5,7 @@ import {
   TrendingUp,
   TrendingDown,
   Plus,
+  PlusCircle,
   Landmark,
   Wallet,
   Coins,
@@ -12,6 +13,7 @@ import {
 import type { Investment } from "@/types";
 import { useInvestments } from "@/hooks/useInvestments";
 import { useGamification } from "@/components/providers/GamificationProvider";
+import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card } from "@/components/ui/Card";
@@ -22,7 +24,8 @@ import { InvestmentList } from "./InvestmentList";
 import { ContributionsTimeline } from "./ContributionsTimeline";
 import { InvestmentModal } from "./InvestmentModal";
 import { ContributionModal } from "./ContributionModal";
-import { formatBRL, cn } from "@/lib/utils";
+import { InvestmentRateInfo } from "./InvestmentRateInfo";
+import { formatBRL, todayISO, cn } from "@/lib/utils";
 
 type TabKey = "overview" | "investments" | "contributions";
 
@@ -32,6 +35,7 @@ const DISCLAIMER =
 export function InvestmentsPage() {
   const { user } = useAuth();
   const { celebrate } = useGamification();
+  const { toast } = useToast();
   const {
     investments,
     contributions,
@@ -44,6 +48,7 @@ export function InvestmentsPage() {
     getTotalReturnPercent,
     getEmergencyFundTotal,
     getMonthlyPassiveIncome,
+    getMonthlyAllocationStatus,
     createInvestment,
     updateInvestment,
     deleteInvestment,
@@ -153,8 +158,31 @@ export function InvestmentsPage() {
     if (res) celebrate(res, { big: !!res.completedGoal });
   };
   const handleContribution = (investmentId: string, form: Parameters<typeof addContribution>[1]) => {
+    const inv = investments.find((i) => i.id === investmentId);
     const res = addContribution(investmentId, form);
     if (res) celebrate(res, { big: !!res.completedGoal });
+
+    // Confirmation toast with the investment name.
+    toast({
+      variant: "success",
+      title: "💰 Aporte registrado!",
+      description: `+${formatBRL(form.amount)} em ${inv?.name ?? "investimento"}`,
+    });
+
+    // Monthly allocation target reached for this investment?
+    if (inv?.allocationPercent != null) {
+      const month = todayISO().slice(0, 7);
+      const monthContribs = contributions.filter((c) => c.date.slice(0, 7) === month);
+      const prevTotal = monthContribs.reduce((s, c) => s + c.amount, 0);
+      const prevInv = monthContribs
+        .filter((c) => c.investmentId === investmentId)
+        .reduce((s, c) => s + c.amount, 0);
+      const newTotal = prevTotal + form.amount;
+      const realized = newTotal > 0 ? ((prevInv + form.amount) / newTotal) * 100 : 0;
+      if (realized + 0.5 >= inv.allocationPercent) {
+        toast({ variant: "success", title: "🎯 Meta de alocação atingida esse mês!" });
+      }
+    }
   };
 
   const goToEmergency = () => {
@@ -174,12 +202,25 @@ export function InvestmentsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <PageHeader
           title="Investimentos"
-          subtitle="Seu patrimônio pessoal e evolução financeira."
+          subtitle="O patrimônio do casal e a evolução financeira de vocês."
         />
-        <Button icon={Plus} onClick={openCreate} className="hidden self-start sm:inline-flex">
-          Novo Investimento
-        </Button>
+        <div className="hidden items-center gap-2 self-start sm:flex">
+          <Button
+            variant="outline"
+            icon={PlusCircle}
+            onClick={() => openContribution(null)}
+            disabled={investments.length === 0}
+          >
+            Registrar aporte
+          </Button>
+          <Button icon={Plus} onClick={openCreate}>
+            Novo Investimento
+          </Button>
+        </div>
       </div>
+
+      {/* Selic / Copom banner */}
+      <InvestmentRateInfo />
 
       {/* KPI row */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -287,6 +328,7 @@ export function InvestmentsPage() {
         open={contributionModalOpen}
         investment={contributionTarget}
         investments={investments}
+        allocationStatus={getMonthlyAllocationStatus()}
         onClose={() => setContributionModalOpen(false)}
         onSubmit={handleContribution}
       />

@@ -3,6 +3,7 @@ import type {
   InvestmentType,
   IndexType,
   InvestmentLiquidity,
+  RiskLevel,
 } from "@/types";
 
 /**
@@ -14,9 +15,16 @@ import type {
 
 /** Reference market rates (% a.a.) — update manually as COPOM/IPCA change. */
 export const REFERENCE_RATES = {
-  selic: 10.5, // % ao ano — atualizar conforme COPOM
+  selic: 13.75, // % ao ano — COPOM set/2026
   ipca: 4.5, // % ao ano — estimativa anual
-  cdi: 10.4, // % ao ano — próximo à Selic
+  cdi: 13.65, // % ao ano — próximo à Selic
+} as const;
+
+/** Current COPOM / Selic context (update as the central bank meets). */
+export const COPOM_INFO = {
+  selicRate: 13.75, // % a.a. vigente
+  setAt: "2026-09-16", // reunião que definiu a taxa atual
+  nextMeeting: "2026-11-04", // próxima reunião do COPOM
 } as const;
 
 /** Presentation metadata per investment type. */
@@ -48,14 +56,14 @@ export const INVESTMENT_TYPE_META: Record<
   cdb: {
     label: "CDB",
     short: "CDB",
-    color: "var(--success)",
+    color: "var(--brand-cyan)",
     defaultIndex: "cdi",
     tip: "Liquidez diária (na maioria). Rende % do CDI. Boa alternativa para reserva.",
   },
   lci_lca: {
     label: "LCI / LCA",
     short: "LCI/LCA",
-    color: "var(--cyan-dark)",
+    color: "var(--brand-cyan-dark)",
     defaultIndex: "cdi",
     tip: "Isentas de IR. Costumam ter carência. Rendem % do CDI.",
   },
@@ -87,6 +95,13 @@ export const INVESTMENT_TYPE_META: Record<
     defaultIndex: "nenhum",
     tip: "Simples e líquida, mas rende pouco. Considere o Tesouro Selic no lugar.",
   },
+  exterior: {
+    label: "Exterior",
+    short: "Exterior",
+    color: "var(--cat-financeiro)",
+    defaultIndex: "nenhum",
+    tip: "Exposição internacional (ETFs, stocks, REITs). Diversifica em moeda forte.",
+  },
   outro: {
     label: "Outro",
     short: "Outro",
@@ -108,6 +123,18 @@ export const LIQUIDITY_META: Record<InvestmentLiquidity, { label: string }> = {
   no_vencimento: { label: "No vencimento" },
   carencia: { label: "Carência" },
 };
+
+export const RISK_META: Record<RiskLevel, { label: string; color: string }> = {
+  baixo: { label: "Risco baixo", color: "var(--success)" },
+  medio: { label: "Risco médio", color: "var(--warning)" },
+  alto: { label: "Risco alto", color: "var(--danger)" },
+};
+
+/** Approximate number of cotas/units for a contribution, given the unit price. */
+export function estimateUnits(amount: number, unitPrice?: number | null): number | null {
+  if (!unitPrice || unitPrice <= 0) return null;
+  return amount / unitPrice;
+}
 
 /** Effective annual rate (% a.a.) for an investment, from its index + rate. */
 export function effectiveAnnualRate(index: IndexType, rate: number): number {

@@ -80,6 +80,39 @@ export function InvestmentOverview({
     return { segments, total, circ };
   }, [investments]);
 
+  /* --- Target allocation (planned 60 / 15 / 25) --- */
+  const allocation = useMemo(() => {
+    const withTarget = investments.filter((i) => i.allocationPercent != null && i.allocationPercent > 0);
+    const sum = withTarget.reduce((s, i) => s + (i.allocationPercent ?? 0), 0);
+    const circ = 2 * Math.PI * 30;
+    let acc = 0;
+    const palette = [
+      "var(--brand-purple)",
+      "var(--brand-cyan)",
+      "var(--cat-financeiro)",
+      "var(--success)",
+      "var(--info)",
+      "var(--prio-alta)",
+    ];
+    const segments = withTarget
+      .sort((a, b) => (b.allocationPercent ?? 0) - (a.allocationPercent ?? 0))
+      .map((inv, i) => {
+        const percentage = sum > 0 ? ((inv.allocationPercent ?? 0) / sum) * 100 : 0;
+        const strokeLength = (percentage / 100) * circ;
+        const strokeOffset = circ - (acc / 100) * circ;
+        acc += percentage;
+        return {
+          id: inv.id,
+          name: inv.name,
+          target: inv.allocationPercent ?? 0,
+          color: palette[i % palette.length],
+          strokeLength,
+          strokeOffset,
+        };
+      });
+    return { segments, sum, circ };
+  }, [investments]);
+
   return (
     <div className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-2">
@@ -199,6 +232,60 @@ export function InvestmentOverview({
           )}
         </Card>
       </div>
+
+      {/* Target allocation donut (planned 60 / 15 / 25) */}
+      {allocation.segments.length > 0 && (
+        <Card>
+          <div className="mb-4 flex items-center gap-2">
+            <PieChartIcon className="size-5 text-brand" />
+            <CardTitle className="text-base">Alocação planejada</CardTitle>
+          </div>
+          <div className="grid grid-cols-1 items-center gap-4 sm:grid-cols-2">
+            <div className="flex justify-center">
+              <svg width="160" height="160" viewBox="0 0 100 100" className="rotate-[-90deg]">
+                <circle cx="50" cy="50" r="30" fill="transparent" stroke="var(--border)" strokeWidth="12" />
+                {allocation.segments.map((seg) => (
+                  <circle
+                    key={seg.id}
+                    cx="50"
+                    cy="50"
+                    r="30"
+                    fill="transparent"
+                    stroke={seg.color}
+                    strokeWidth="12"
+                    strokeDasharray={`${seg.strokeLength} ${allocation.circ}`}
+                    strokeDashoffset={seg.strokeOffset}
+                    strokeLinecap="butt"
+                  >
+                    <title>{`${seg.name}: ${seg.target}%`}</title>
+                  </circle>
+                ))}
+                <g transform="rotate(90 50 50)">
+                  <text x="50" y="47" textAnchor="middle" className="fill-content text-[8px] font-bold">
+                    Meta mensal
+                  </text>
+                  <text x="50" y="58" textAnchor="middle" className="fill-brand text-[8px] font-extrabold">
+                    100%
+                  </text>
+                </g>
+              </svg>
+            </div>
+            <div className="space-y-2.5">
+              {allocation.segments.map((seg) => (
+                <div key={seg.id} className="flex items-center justify-between text-xs">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: seg.color }} />
+                    <span className="truncate font-medium text-content">{seg.name}</span>
+                  </div>
+                  <span className="shrink-0 rounded bg-panel px-1.5 py-0.5 text-[10px] font-semibold text-content">
+                    {seg.target}%
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+      )}
 
       {/* Reference rates */}
       <Card>

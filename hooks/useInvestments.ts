@@ -7,6 +7,8 @@ import type {
   InvestmentType,
   IndexType,
   InvestmentLiquidity,
+  RiskLevel,
+  Contributor,
   FinanceEntry,
   Achievement,
   Goal,
@@ -27,6 +29,8 @@ import {
 } from "@/lib/investment-calculator";
 
 const LUCAS_ID = KNOWN_USERS[0].id;
+/** Canonical owner id for shared (couple-level) rows like patrimony snapshots. */
+const SHARED_ID = LUCAS_ID;
 const monthKey = (iso: string) => iso.slice(0, 7); // YYYY-MM
 
 /** Achievement ids the user newly qualifies for after a mutation (pure). */
@@ -38,11 +42,12 @@ function extraAchievementsFor(
   const have = new Set(
     d.userAchievements.filter((ua) => ua.userId === userId).map((ua) => ua.achievementId),
   );
-  const mine = d.investments.filter((i) => i.userId === userId);
+  // Shared portfolio — milestones consider ALL positions, not just this user's.
+  const all = d.investments;
   const out: string[] = [];
 
   // Patrimônio milestones — one-time reward each (R$ 10k / 50k / 100k)
-  const totalCurrent = mine.reduce((s, i) => s + i.currentValue, 0);
+  const totalCurrent = all.reduce((s, i) => s + i.currentValue, 0);
   if (totalCurrent >= 10000 && !have.has("ach_patrimony_10k")) out.push("ach_patrimony_10k");
   if (totalCurrent >= 50000 && !have.has("ach_patrimony_50k")) out.push("ach_patrimony_50k");
   if (totalCurrent >= 100000 && !have.has("ach_patrimony_100k")) out.push("ach_patrimony_100k");
@@ -50,14 +55,14 @@ function extraAchievementsFor(
   // Reserva Completa — emergency fund ≥ target (4× monthly expenses, when known)
   const reserveTarget = monthlyExpense * 4;
   if (reserveTarget > 0) {
-    const reserve = mine.filter((i) => i.isEmergencyFund).reduce((s, i) => s + i.currentValue, 0);
+    const reserve = all.filter((i) => i.isEmergencyFund).reduce((s, i) => s + i.currentValue, 0);
     if (reserve >= reserveTarget && !have.has("ach_reserve_complete")) out.push("ach_reserve_complete");
   }
 
   // Consistência — contributions in 3 consecutive months (incl. current)
   if (!have.has("ach_consistency")) {
     const months = new Set(
-      d.investmentContributions.filter((c) => c.userId === userId).map((c) => monthKey(c.date)),
+      d.investmentContributions.map((c) => monthKey(c.date)),
     );
     const now = new Date();
     let streak = 0;
@@ -116,14 +121,28 @@ export interface InvestmentFormData {
   liquidityDays: number | null;
   isEmergencyFund: boolean;
   goalId: string | null;
+  institution: string;
+  allocationPercent: number | null;
+  unitPrice: number | null;
+  riskLevel: RiskLevel | null;
+  isPlaceholder: boolean;
   notes: string;
 }
 
 export interface ContributionFormData {
   amount: number;
   date: string;
+  contributor: Contributor;
   notes: string;
   registerAsExpense: boolean;
+}
+
+/** Monthly allocation realized vs. target per investment (shared portfolio). */
+export interface AllocationStatus {
+  investmentId: string;
+  targetPct: number | null;
+  realizedPct: number;
+  status: "ok" | "abaixo" | "sem_meta";
 }
 
 export function useInvestments() {
@@ -131,10 +150,10 @@ export function useInvestments() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  /* ---- slices scoped to the current user ---------------------------------- */
+  /* ---- shared couple portfolio (no per-user scoping) ---------------------- */
   const contributions = useMemo(
-    () => (data.investmentContributions || []).filter((c) => c.userId === userId),
-    [data.investmentContributions, userId],
+    () => data.investmentContributions || [],
+    [data.investmentContributions],
   );
 
   const contributionsByInvestment = useMemo(() => {
@@ -149,14 +168,12 @@ export function useInvestments() {
 
   /** Investments with a freshly recomputed currentValue (interest accrues over time). */
   const investments = useMemo<Investment[]>(() => {
-    return (data.investments || [])
-      .filter((inv) => inv.userId === userId)
-      .map((inv) => {
-        const invContribs = contributionsByInvestment.get(inv.id);
-        const live = calculateCurrentValue(inv, invContribs?.map((c) => ({ amount: c.amount, date: c.date })));
-        return { ...inv, currentValue: live };
-      });
-  }, [data.investments, userId, contributionsByInvestment]);
+    return (data.investments || []).map((inv) => {
+      const invContribs = contributionsByInvestment.get(inv.id);
+      const live = calculateCurrentValue(inv, invContribs?.map((c) => ({ amount: c.amount, date: c.date })));
+      return { ...inv, currentValue: live };
+    });
+  }, [data.investments, contributionsByInvestment]);
 
   /* ---- gamification helper (mirror of useFinance.rewardUser) --------------- */
   const rewardUser = useCallback(
@@ -294,11 +311,33 @@ export function useInvestments() {
     [getTotalCurrentValue, getPortfolioAverageRate],
   );
 
-  /** All contributions (current user), newest first. */
+  /** All contributions (shared), newest first. */
   const allContributions = useMemo(
     () => [...contributions].sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)),
     [contributions],
   );
+
+  /**
+   * Monthly allocation realized vs. target. For the current month, compares how
+   * much each investment received against its `allocationPercent` of the month's
+   * total contributions. `status: "ok"` when realized ≥ target.
+   */
+  const getMonthlyAllocationStatus = useCallback((): AllocationStatus[] => {
+    const key = todayISO().slice(0, 7);
+    const monthContribs = contributions.filter((c) => monthKey(c.date) === key);
+    const monthTotal = monthContribs.reduce((s, c) => s + c.amount, 0);
+    const byInv = new Map<string, number>();
+    for (const c of monthContribs) {
+      byInv.set(c.investmentId, (byInv.get(c.investmentId) ?? 0) + c.amount);
+    }
+    return investments.map((inv) => {
+      const target = inv.allocationPercent ?? null;
+      const realizedPct = monthTotal > 0 ? ((byInv.get(inv.id) ?? 0) / monthTotal) * 100 : 0;
+      const status: AllocationStatus["status"] =
+        target == null ? "sem_meta" : realizedPct + 0.5 >= target ? "ok" : "abaixo";
+      return { investmentId: inv.id, targetPct: target, realizedPct, status };
+    });
+  }, [contributions, investments]);
 
   /* ---- CRUD: investments --------------------------------------------------- */
 
@@ -327,29 +366,48 @@ export function useInvestments() {
           liquidityDays: form.liquidity === "carencia" ? form.liquidityDays : null,
           isEmergencyFund: form.isEmergencyFund,
           goalId: form.goalId,
+          institution: form.institution.trim() || undefined,
+          allocationPercent: form.allocationPercent,
+          unitPrice: form.unitPrice,
+          riskLevel: form.riskLevel,
+          isPlaceholder: form.isPlaceholder,
           notes: form.notes.trim() || undefined,
           createdAt: nowIso,
           updatedAt: nowIso,
         };
 
-        const firstContribution: InvestmentContribution = {
-          id: contribId,
-          investmentId: id,
-          userId,
-          amount: form.initialAmount,
-          date: form.purchaseDate,
-          notes: "Aporte inicial",
-          createdAt: nowIso,
+        // Only create an initial contribution when money was actually put in
+        // (a placeholder / planning-only position starts at R$ 0).
+        const hasInitial = form.initialAmount > 0 && !form.isPlaceholder;
+        const firstContribution: InvestmentContribution | null = hasInitial
+          ? {
+              id: contribId,
+              investmentId: id,
+              userId,
+              contributor: "ambos",
+              amount: form.initialAmount,
+              date: form.purchaseDate,
+              notes: "Aporte inicial",
+              createdAt: nowIso,
+            }
+          : null;
+        const currentValue = firstContribution
+          ? calculateCurrentValue(baseInvestment, [
+              { amount: firstContribution.amount, date: firstContribution.date },
+            ])
+          : 0;
+        const investment = {
+          ...baseInvestment,
+          investedAmount: hasInitial ? form.initialAmount : 0,
+          currentValue,
         };
-        const currentValue = calculateCurrentValue(baseInvestment, [
-          { amount: firstContribution.amount, date: firstContribution.date },
-        ]);
-        const investment = { ...baseInvestment, currentValue };
 
         let next: FlowTaskData = {
           ...d,
           investments: [...d.investments, investment],
-          investmentContributions: [...d.investmentContributions, firstContribution],
+          investmentContributions: firstContribution
+            ? [...d.investmentContributions, firstContribution]
+            : d.investmentContributions,
         };
 
         const { d: withGoal, completed } = recomputeLinkedGoal(next, investment.goalId);
@@ -403,12 +461,15 @@ export function useInvestments() {
       updateData((d) => {
         const inv = d.investments.find((i) => i.id === investmentId);
         if (!inv) return d;
+        // A placeholder (ex: Exterior "Em breve") does not accept contributions yet.
+        if (inv.isPlaceholder) return d;
 
         const nowIso = new Date().toISOString();
         const contribution: InvestmentContribution = {
           id: uid("ic"),
           investmentId,
           userId,
+          contributor: form.contributor,
           amount: form.amount,
           date: form.date,
           notes: form.notes.trim() || undefined,
@@ -493,31 +554,30 @@ export function useInvestments() {
     });
   }, []);
 
-  /* ---- monthly snapshot ---------------------------------------------------- */
+  /* ---- monthly snapshot (shared, one canonical row per month) -------------- */
   const saveMonthlySnapshot = useCallback(() => {
     if (!userId) return;
     updateData((d) => {
-      const mine = d.investments.filter((i) => i.userId === userId);
-      if (mine.length === 0) return d;
+      const all = d.investments;
+      if (all.length === 0) return d;
       const key = todayISO().slice(0, 7);
-      const exists = d.patrimonySnapshots.some((s) => s.userId === userId && s.month === key);
+      // One shared snapshot per month (keyed under the canonical SHARED id).
+      const exists = d.patrimonySnapshots.some((s) => s.userId === SHARED_ID && s.month === key);
       if (exists) return d;
 
       const cById = new Map<string, { amount: number; date: string }[]>();
-      d.investmentContributions
-        .filter((c) => c.userId === userId)
-        .forEach((c) => {
-          const list = cById.get(c.investmentId) ?? [];
-          list.push({ amount: c.amount, date: c.date });
-          cById.set(c.investmentId, list);
-        });
+      d.investmentContributions.forEach((c) => {
+        const list = cById.get(c.investmentId) ?? [];
+        list.push({ amount: c.amount, date: c.date });
+        cById.set(c.investmentId, list);
+      });
 
-      const totalInvested = mine.reduce((s, i) => s + i.investedAmount, 0);
-      const totalCurrent = mine.reduce((s, i) => s + calculateCurrentValue(i, cById.get(i.id)), 0);
+      const totalInvested = all.reduce((s, i) => s + i.investedAmount, 0);
+      const totalCurrent = all.reduce((s, i) => s + calculateCurrentValue(i, cById.get(i.id)), 0);
 
       const snapshot = {
         id: uid("ps"),
-        userId,
+        userId: SHARED_ID,
         month: key,
         totalInvested: Math.round(totalInvested * 100) / 100,
         totalCurrent: Math.round(totalCurrent * 100) / 100,
@@ -527,143 +587,72 @@ export function useInvestments() {
     });
   }, [userId]);
 
-  const snapshots = useMemo(
-    () =>
-      (data.patrimonySnapshots || [])
-        .filter((s) => s.userId === userId)
-        .sort((a, b) => a.month.localeCompare(b.month)),
-    [data.patrimonySnapshots, userId],
-  );
+  /** Shared patrimony history — one point per month (dedup, latest wins). */
+  const snapshots = useMemo(() => {
+    const byMonth = new Map<string, (typeof data.patrimonySnapshots)[number]>();
+    for (const s of data.patrimonySnapshots || []) {
+      const prev = byMonth.get(s.month);
+      if (!prev || s.snapshotAt.localeCompare(prev.snapshotAt) > 0) byMonth.set(s.month, s);
+    }
+    return [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month));
+  }, [data.patrimonySnapshots]);
 
-  /* ---- seed (Lucas's real portfolio — runs once, upgrades v1 data) --------- */
+  /* ---- seed (shared strategy — the 3 planned vehicles, runs once) ---------- */
   const seedIfEmpty = useCallback(() => {
-    if (!userId || userId !== LUCAS_ID) return;
+    if (!userId) return;
     if (typeof window === "undefined") return;
-    // Versioned flag: v2 adds the "Reserva de Emergência" goal + links + notes,
-    // so it runs once even for browsers that already ran the original seed.
-    const flagKey = `flowtask_investments_seed_v2_${userId}`;
+    // v3: shared allocation strategy (Tesouro Selic 2031 / Caixinha Nubank /
+    // Exterior), idempotent by investment name across the whole (shared) portfolio.
+    const flagKey = "flowtask_investments_seed_v3";
     if (window.localStorage.getItem(flagKey)) return;
     window.localStorage.setItem(flagKey, "1");
 
     const nowIso = new Date().toISOString();
-    const RESERVE_TARGET = 6000;
-    const GOAL_TITLE = "Reserva de Emergência";
+    const today = todayISO();
 
-    const specs = [
+    // Go-forward allocation plan (invested R$ 0 — users log aportes over time).
+    const specs: {
+      name: string; type: InvestmentType; index: IndexType; rate: number;
+      allocationPercent: number; unitPrice: number | null; maturity: string | null;
+      liquidity: InvestmentLiquidity; risk: RiskLevel; institution: string;
+      placeholder: boolean; notes: string;
+    }[] = [
       {
-        name: "Tesouro Selic 2027", type: "tesouro_selic" as const, index: "selic" as const,
-        rate: 0, amount: 194, purchase: "2026-06-01", maturity: "2027-03-01" as string | null,
-        liquidity: "diaria" as const, reserve: true,
-        notes: "Primeiro investimento — reserva de emergência", contribNote: "Aporte inicial",
+        name: "Tesouro Selic 2031", type: "tesouro_selic", index: "selic", rate: 0.09,
+        allocationPercent: 60, unitPrice: 199.43, maturity: "2031-03-01",
+        liquidity: "diaria", risk: "baixo", institution: "Tesouro Nacional",
+        placeholder: false, notes: "Selic + 0,09% a.a. Resgate em D+1. Núcleo da carteira (60%).",
       },
       {
-        name: "CDB Diário Nubank", type: "cdb" as const, index: "cdi" as const,
-        rate: 100, amount: 96, purchase: "2026-06-01", maturity: null as string | null,
-        liquidity: "diaria" as const, reserve: true,
-        notes: "Sobra do mês — liquidez diária", contribNote: "Aporte inicial",
+        name: "Caixinha Nubank", type: "cdb", index: "cdi", rate: 100,
+        allocationPercent: 15, unitPrice: null, maturity: null,
+        liquidity: "diaria", risk: "baixo", institution: "Nubank",
+        placeholder: false, notes: "100% do CDI. Liquidez imediata. Garantia FGC até R$ 250k por CPF.",
       },
       {
-        name: "Tesouro IPCA+ 2035", type: "tesouro_ipca" as const, index: "ipca" as const,
-        rate: 6.5, amount: 87, purchase: "2026-07-01", maturity: "2035-05-15" as string | null,
-        liquidity: "no_vencimento" as const, reserve: false,
-        notes: "Longo prazo — não resgatar antes do vencimento", contribNote: "Aporte inicial — longo prazo",
+        name: "Investimentos no Exterior", type: "exterior", index: "nenhum", rate: 0,
+        allocationPercent: 25, unitPrice: null, maturity: null,
+        liquidity: "diaria", risk: "medio", institution: "A definir",
+        placeholder: true, notes: "Alocação reservada (25%). Veículo ainda não escolhido.",
       },
     ];
 
     updateData((d) => {
-      // 1. Ensure the "Reserva de Emergência" goal (R$ 6.000).
-      const existingGoal = d.goals.find((g) => g.createdBy === userId && g.title === GOAL_TITLE);
-      const goalId = existingGoal?.id ?? uid("g");
-      let goals = existingGoal
-        ? d.goals.map((g) =>
-            g.id === goalId ? { ...g, type: "financeira" as const, targetAmount: RESERVE_TARGET, category: "reserva_emergencia", linkedModule: "investimentos" } : g,
-          )
-        : [
-            ...d.goals,
-            {
-              id: goalId, title: GOAL_TITLE,
-              description: "Segurança financeira — formada pelos investimentos marcados como reserva.",
-              type: "financeira" as const, targetAmount: RESERVE_TARGET, currentAmount: 0,
-              deadline: null, category: "reserva_emergencia", linkedModule: "investimentos",
-              xpReward: XP.financialGoal, status: "em_andamento" as const,
-              createdBy: userId, createdAt: nowIso, completedAt: null,
-            },
-          ];
-
-      // 2. Create (or upgrade in place) each investment + its first contribution.
-      let investments = [...d.investments];
-      let contributions = [...d.investmentContributions];
-
+      const investments = [...d.investments];
       for (const s of specs) {
-        const linkGoal = s.reserve ? goalId : null;
-        const existing = investments.find((i) => i.userId === userId && i.name === s.name);
-        if (existing) {
-          investments = investments.map((i) =>
-            i.id === existing.id
-              ? { ...i, isEmergencyFund: s.reserve, goalId: linkGoal, notes: s.notes, updatedAt: nowIso }
-              : i,
-          );
-        } else {
-          const id = uid("inv");
-          const base: Investment = {
-            id, userId, name: s.name, type: s.type, index: s.index, rate: s.rate,
-            investedAmount: s.amount, currentValue: s.amount, purchaseDate: s.purchase,
-            maturityDate: s.maturity, liquidity: s.liquidity, liquidityDays: null,
-            isEmergencyFund: s.reserve, goalId: linkGoal, notes: s.notes,
-            createdAt: nowIso, updatedAt: nowIso,
-          };
-          const currentValue = calculateCurrentValue(base, [{ amount: s.amount, date: s.purchase }]);
-          investments.push({ ...base, currentValue });
-          contributions.push({
-            id: uid("ic"), investmentId: id, userId, amount: s.amount,
-            date: s.purchase, notes: s.contribNote, createdAt: nowIso,
-          });
-        }
+        // Idempotent globally: skip if a position with this name already exists.
+        if (investments.some((i) => i.name === s.name)) continue;
+        investments.push({
+          id: uid("inv"), userId, name: s.name, type: s.type, index: s.index, rate: s.rate,
+          investedAmount: 0, currentValue: 0, purchaseDate: today,
+          maturityDate: s.maturity, liquidity: s.liquidity, liquidityDays: null,
+          isEmergencyFund: false, goalId: null,
+          institution: s.institution, allocationPercent: s.allocationPercent,
+          unitPrice: s.unitPrice, riskLevel: s.risk, isPlaceholder: s.placeholder,
+          notes: s.notes, createdAt: nowIso, updatedAt: nowIso,
+        });
       }
-
-      // 3. Goal progress = sum of the linked (reserve) investments' current value.
-      const contribsById = new Map<string, { amount: number; date: string }[]>();
-      contributions.forEach((c) => {
-        const list = contribsById.get(c.investmentId) ?? [];
-        list.push({ amount: c.amount, date: c.date });
-        contribsById.set(c.investmentId, list);
-      });
-      const reserveSum = investments
-        .filter((i) => i.goalId === goalId)
-        .reduce((sum, i) => sum + calculateCurrentValue(i, contribsById.get(i.id)), 0);
-      goals = goals.map((g) =>
-        g.id === goalId
-          ? {
-              ...g,
-              currentAmount: Math.min(RESERVE_TARGET, Math.round(reserveSum)),
-              status: reserveSum >= RESERVE_TARGET ? ("concluida" as const) : ("em_andamento" as const),
-              completedAt: reserveSum >= RESERVE_TARGET ? g.completedAt || nowIso : null,
-            }
-          : g,
-      );
-
-      // 4. Retroactively unlock the "Primeiro Investimento" achievement for Lucas.
-      let userAchievements = d.userAchievements;
-      let users = d.users;
-      const hasFirst = userAchievements.some(
-        (ua) => ua.userId === userId && ua.achievementId === "ach_first_investment",
-      );
-      if (!hasFirst) {
-        userAchievements = [
-          ...userAchievements,
-          { id: uid("ua"), userId, achievementId: "ach_first_investment", unlockedAt: nowIso },
-        ];
-        const ach = d.achievements.find((a) => a.id === "ach_first_investment");
-        if (ach) {
-          users = users.map((u) => {
-            if (u.id !== userId) return u;
-            const nextXp = u.xp + ach.xpReward;
-            return { ...u, xp: nextXp, level: levelFromXp(nextXp).level };
-          });
-        }
-      }
-
-      return { ...d, goals, investments, investmentContributions: contributions, userAchievements, users };
+      return { ...d, investments };
     });
   }, [userId]);
 
@@ -684,6 +673,7 @@ export function useInvestments() {
     getInvestmentsByType,
     getPortfolioAverageRate,
     getProjection,
+    getMonthlyAllocationStatus,
     // mutations
     createInvestment,
     updateInvestment,
