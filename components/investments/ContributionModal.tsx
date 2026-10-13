@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { Star } from "lucide-react";
-import type { Investment } from "@/types";
+import type { Investment, Contributor } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Input";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
-import type { ContributionFormData } from "@/hooks/useInvestments";
-import { todayISO, cn } from "@/lib/utils";
+import type { ContributionFormData, AllocationStatus } from "@/hooks/useInvestments";
+import { estimateUnits } from "@/lib/investment-calculator";
+import { todayISO, formatBRL, cn } from "@/lib/utils";
 
 interface ContributionModalProps {
   open: boolean;
@@ -16,18 +17,27 @@ interface ContributionModalProps {
   investment: Investment | null;
   /** Full list, enabling a picker when no fixed investment (aporte avulso). */
   investments?: Investment[];
+  /** Current-month allocation status per investment (for the target badge). */
+  allocationStatus?: AllocationStatus[];
   onClose: () => void;
   onSubmit: (investmentId: string, form: ContributionFormData) => void;
 }
 
+const CONTRIBUTORS: { value: Contributor; label: string }[] = [
+  { value: "lucas", label: "Lucas" },
+  { value: "thaiane", label: "Thaiane" },
+  { value: "ambos", label: "Ambos" },
+];
+
 function emptyForm(): ContributionFormData {
-  return { amount: 0, date: todayISO(), notes: "", registerAsExpense: false };
+  return { amount: 0, date: todayISO(), contributor: "ambos", notes: "", registerAsExpense: false };
 }
 
 export function ContributionModal({
   open,
   investment,
   investments = [],
+  allocationStatus = [],
   onClose,
   onSubmit,
 }: ContributionModalProps) {
@@ -37,6 +47,9 @@ export function ContributionModal({
   const [amountError, setAmountError] = useState(false);
 
   const usePicker = !investment;
+  const targetInv = investment ?? investments.find((i) => i.id === selectedId) ?? null;
+  const units = estimateUnits(form.amount, targetInv?.unitPrice);
+  const alloc = targetInv ? allocationStatus.find((a) => a.investmentId === targetInv.id) : undefined;
 
   useEffect(() => {
     if (open) {
@@ -120,6 +133,48 @@ export function ContributionModal({
             )}
             autoFocus
           />
+          {units !== null && form.amount > 0 && (
+            <p className="mt-1.5 text-xs text-muted">
+              Comprando <strong className="text-content">≈ {units.toFixed(1).replace(".", ",")} cotas</strong>{" "}
+              (cota {formatBRL(targetInv?.unitPrice ?? 0)})
+            </p>
+          )}
+          {alloc && alloc.targetPct != null && (
+            <p
+              className={cn(
+                "mt-1.5 inline-flex rounded-badge px-2 py-0.5 text-[11px] font-semibold",
+                alloc.status === "ok"
+                  ? "bg-success/10 text-success"
+                  : "bg-warning/10 text-warning",
+              )}
+            >
+              {alloc.status === "ok"
+                ? `✅ Dentro da alocação planejada (${alloc.targetPct}%)`
+                : `⚠️ ${Math.round(alloc.realizedPct)}% este mês · meta ${alloc.targetPct}%`}
+            </p>
+          )}
+        </div>
+
+        {/* Who contributed */}
+        <div>
+          <Label>Quem aportou</Label>
+          <div className="grid grid-cols-3 gap-2">
+            {CONTRIBUTORS.map((c) => (
+              <button
+                key={c.value}
+                type="button"
+                onClick={() => patch({ contributor: c.value })}
+                className={cn(
+                  "rounded-input border px-3 py-2 text-sm font-medium transition-colors",
+                  form.contributor === c.value
+                    ? "border-brand bg-brand/10 text-brand"
+                    : "border-line text-muted hover:bg-panel/60",
+                )}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
 
         <div>

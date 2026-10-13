@@ -119,22 +119,26 @@ export default function DashboardPage() {
 
   const patrimony = useMemo(() => {
     if (!user) return { total: 0, passive: 0, hasAny: false, spark: [] as number[] };
-    const mine = (data.investments || []).filter((i) => i.userId === user.id);
+    // Shared couple portfolio — not scoped per user.
+    const all = data.investments || [];
     const contribsByInv = new Map<string, { amount: number; date: string }[]>();
-    (data.investmentContributions || [])
-      .filter((c) => c.userId === user.id)
-      .forEach((c) => {
-        const list = contribsByInv.get(c.investmentId) ?? [];
-        list.push({ amount: c.amount, date: c.date });
-        contribsByInv.set(c.investmentId, list);
-      });
-    const total = mine.reduce((s, i) => s + calculateCurrentValue(i, contribsByInv.get(i.id)), 0);
-    const spark = (data.patrimonySnapshots || [])
-      .filter((s) => s.userId === user.id)
-      .sort((a, b) => a.month.localeCompare(b.month))
+    (data.investmentContributions || []).forEach((c) => {
+      const list = contribsByInv.get(c.investmentId) ?? [];
+      list.push({ amount: c.amount, date: c.date });
+      contribsByInv.set(c.investmentId, list);
+    });
+    const total = all.reduce((s, i) => s + calculateCurrentValue(i, contribsByInv.get(i.id)), 0);
+    // One shared point per month (dedup, latest wins).
+    const byMonth = new Map<string, number>();
+    (data.patrimonySnapshots || [])
+      .slice()
+      .sort((a, b) => a.snapshotAt.localeCompare(b.snapshotAt))
+      .forEach((s) => byMonth.set(s.month, s.totalCurrent));
+    const spark = [...byMonth.entries()]
+      .sort((a, b) => a[0].localeCompare(b[0]))
       .slice(-6)
-      .map((s) => s.totalCurrent);
-    return { total, passive: estimateMonthlyPassiveIncome(total), hasAny: mine.length > 0, spark };
+      .map(([, v]) => v);
+    return { total, passive: estimateMonthlyPassiveIncome(total), hasAny: all.length > 0, spark };
   }, [data.investments, data.investmentContributions, data.patrimonySnapshots, user]);
 
   const income = useMemo(() => {

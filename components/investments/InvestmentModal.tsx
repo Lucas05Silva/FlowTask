@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from "react";
 import { Star, Trash2, Info } from "lucide-react";
-import type { Investment, InvestmentType, IndexType, InvestmentLiquidity, Goal } from "@/types";
+import type { Investment, InvestmentType, IndexType, InvestmentLiquidity, RiskLevel, Goal } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Input";
 import { CurrencyInput } from "@/components/ui/CurrencyInput";
-import { INVESTMENT_TYPE_META, INDEX_META, LIQUIDITY_META } from "@/lib/investment-calculator";
+import { INVESTMENT_TYPE_META, INDEX_META, LIQUIDITY_META, RISK_META } from "@/lib/investment-calculator";
 import type { InvestmentFormData } from "@/hooks/useInvestments";
 import { todayISO, cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ interface InvestmentModalProps {
 const TYPE_OPTIONS = Object.keys(INVESTMENT_TYPE_META) as InvestmentType[];
 const INDEX_OPTIONS = Object.keys(INDEX_META) as IndexType[];
 const LIQUIDITY_OPTIONS = Object.keys(LIQUIDITY_META) as InvestmentLiquidity[];
+const RISK_OPTIONS = Object.keys(RISK_META) as RiskLevel[];
 
 function emptyForm(): InvestmentFormData {
   return {
@@ -38,6 +39,11 @@ function emptyForm(): InvestmentFormData {
     liquidityDays: null,
     isEmergencyFund: false,
     goalId: null,
+    institution: "",
+    allocationPercent: null,
+    unitPrice: null,
+    riskLevel: null,
+    isPlaceholder: false,
     notes: "",
   };
 }
@@ -55,6 +61,11 @@ function fromInvestment(inv: Investment): InvestmentFormData {
     liquidityDays: inv.liquidityDays ?? null,
     isEmergencyFund: inv.isEmergencyFund,
     goalId: inv.goalId ?? null,
+    institution: inv.institution ?? "",
+    allocationPercent: inv.allocationPercent ?? null,
+    unitPrice: inv.unitPrice ?? null,
+    riskLevel: inv.riskLevel ?? null,
+    isPlaceholder: inv.isPlaceholder ?? false,
     notes: inv.notes ?? "",
   };
 }
@@ -122,6 +133,11 @@ export function InvestmentModal({
         liquidityDays: form.liquidity === "carencia" ? form.liquidityDays : null,
         isEmergencyFund: form.isEmergencyFund,
         goalId: form.goalId,
+        institution: form.institution.trim() || undefined,
+        allocationPercent: form.allocationPercent,
+        unitPrice: form.unitPrice,
+        riskLevel: form.riskLevel,
+        isPlaceholder: form.isPlaceholder,
         notes: form.notes.trim() || undefined,
       });
     } else {
@@ -292,6 +308,86 @@ export function InvestmentModal({
               />
             </div>
           )}
+        </div>
+
+        {/* Institution + risk */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="inv-institution">Instituição</Label>
+            <Input
+              id="inv-institution"
+              value={form.institution}
+              onChange={(e) => patch({ institution: e.target.value })}
+              placeholder="Ex: Tesouro Nacional, Nubank"
+            />
+          </div>
+          <div>
+            <Label htmlFor="inv-risk">Nível de risco</Label>
+            <Select
+              id="inv-risk"
+              value={form.riskLevel ?? ""}
+              onChange={(e) => patch({ riskLevel: (e.target.value || null) as RiskLevel | null })}
+            >
+              <option value="">Não definido</option>
+              {RISK_OPTIONS.map((r) => (
+                <option key={r} value={r}>
+                  {RISK_META[r].label}
+                </option>
+              ))}
+            </Select>
+          </div>
+        </div>
+
+        {/* Allocation % + unit (cota) price */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <Label htmlFor="inv-alloc">Alocação mensal (%)</Label>
+            <Input
+              id="inv-alloc"
+              type="number"
+              inputMode="numeric"
+              min="0"
+              max="100"
+              value={form.allocationPercent ?? ""}
+              onChange={(e) => patch({ allocationPercent: e.target.value === "" ? null : parseInt(e.target.value, 10) || 0 })}
+              placeholder="Ex: 60"
+            />
+          </div>
+          <div>
+            <Label htmlFor="inv-unit">Preço da cota</Label>
+            <CurrencyInput
+              id="inv-unit"
+              value={form.unitPrice ?? 0}
+              onChange={(v) => patch({ unitPrice: v > 0 ? v : null })}
+            />
+          </div>
+        </div>
+
+        {/* Placeholder toggle (reserved vehicle, ex: Exterior) */}
+        <div className="rounded-input border border-line p-3">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="mb-0 font-medium text-content">Veículo ainda não definido?</Label>
+              <p className="mt-0.5 text-[11px] text-muted">Mostra &quot;Em breve&quot; e bloqueia aportes.</p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={form.isPlaceholder}
+              onClick={() => patch({ isPlaceholder: !form.isPlaceholder })}
+              className={cn(
+                "relative h-6 w-11 shrink-0 rounded-full transition-colors",
+                form.isPlaceholder ? "bg-brand" : "bg-panel",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 size-5 rounded-full bg-white shadow-soft transition-transform",
+                  form.isPlaceholder ? "translate-x-5" : "translate-x-0.5",
+                )}
+              />
+            </button>
+          </div>
         </div>
 
         {/* Emergency fund toggle */}

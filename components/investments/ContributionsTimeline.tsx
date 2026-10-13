@@ -1,13 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Plus, History, Trash2 } from "lucide-react";
+import { Plus, History, Trash2, CalendarDays } from "lucide-react";
 import type { Investment, InvestmentContribution } from "@/types";
 import { Card } from "@/components/ui/Card";
 import { Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { formatBRL, formatDate } from "@/lib/utils";
+import { formatBRL, formatDate, todayISO } from "@/lib/utils";
+import { estimateUnits } from "@/lib/investment-calculator";
 
 interface ContributionsTimelineProps {
   contributions: InvestmentContribution[];
@@ -21,6 +22,12 @@ const MONTH_LABELS = [
   "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro",
 ];
+
+const CONTRIBUTOR_LABEL: Record<string, string> = {
+  lucas: "Lucas",
+  thaiane: "Thaiane",
+  ambos: "Ambos",
+};
 
 export function ContributionsTimeline({
   contributions,
@@ -50,11 +57,13 @@ export function ContributionsTimeline({
       .sort((a, b) => b[0].localeCompare(a[0]))
       .map(([month, items]) => ({
         month,
-        label: `${MONTH_LABELS[parseInt(month.slice(5, 7), 10) - 1]} ${month.slice(0, 4)}`,
+        label: `${MONTH_LABELS[parseInt(month.slice(5, 7), 10) - 1]}/${month.slice(0, 4)}`,
         total: items.reduce((s, c) => s + c.amount, 0),
         items: [...items].sort((a, b) => b.date.localeCompare(a.date)),
       }));
   }, [contributions, investmentFilter]);
+
+  const currentMonth = todayISO().slice(0, 7);
 
   return (
     <div className="space-y-4">
@@ -89,13 +98,24 @@ export function ContributionsTimeline({
         <div className="space-y-5">
           {groups.map((group) => (
             <div key={group.month}>
-              <div className="mb-2 flex items-center justify-between">
-                <h3 className="text-sm font-bold text-content">{group.label}</h3>
-                <span className="text-sm font-semibold text-success">+{formatBRL(group.total)}</span>
+              <div className="mb-2 flex items-center justify-between gap-3">
+                <h3 className="flex items-center gap-1.5 text-sm font-bold text-content">
+                  <CalendarDays className="size-4 text-muted" aria-hidden />
+                  {group.label}
+                </h3>
+                <div className="text-right">
+                  <span className="text-sm font-semibold text-success">+{formatBRL(group.total)}</span>
+                  {group.month === currentMonth && (
+                    <p className="text-[11px] text-muted">
+                      Projeção anual: <span className="font-medium text-content">{formatBRL(group.total * 12)}</span>
+                    </p>
+                  )}
+                </div>
               </div>
               <Card padded={false} className="divide-y divide-line/60 overflow-hidden">
                 {group.items.map((c) => {
                   const inv = nameById.get(c.investmentId);
+                  const units = estimateUnits(c.amount, inv?.unitPrice);
                   return (
                     <div key={c.id} className="group flex items-center gap-3 px-4 py-3">
                       <span className="w-12 shrink-0 text-xs font-medium text-muted">{formatDate(c.date)}</span>
@@ -104,9 +124,21 @@ export function ContributionsTimeline({
                           {inv?.name ?? "Investimento removido"}
                           {inv?.isEmergencyFund && <span className="ml-1.5 text-[11px] text-success">(Reserva)</span>}
                         </p>
-                        {c.notes && <p className="truncate text-[11px] text-muted">{c.notes}</p>}
+                        <p className="truncate text-[11px] text-muted">
+                          <span className="font-medium text-content">
+                            {CONTRIBUTOR_LABEL[c.contributor ?? "ambos"]}
+                          </span>
+                          {c.notes ? ` · ${c.notes}` : ""}
+                        </p>
                       </div>
-                      <span className="shrink-0 text-sm font-bold text-success">+{formatBRL(c.amount)}</span>
+                      <div className="shrink-0 text-right">
+                        <span className="text-sm font-bold text-success">+{formatBRL(c.amount)}</span>
+                        {units !== null && (
+                          <p className="text-[11px] text-muted">
+                            ≈ {units.toLocaleString("pt-BR", { maximumFractionDigits: 1 })} cotas
+                          </p>
+                        )}
+                      </div>
                       <button
                         type="button"
                         onClick={() => onDelete(c.id)}
