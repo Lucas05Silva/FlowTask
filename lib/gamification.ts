@@ -56,6 +56,7 @@ export const XP = {
   incomeProfileUpdate: 25,
   expenseAdd: 10,
   installmentPaid: 30,
+  canadaStep: 10,
 } as const;
 
 /** XP for completing a task, based on its priority (prompt Fase 2 §2). */
