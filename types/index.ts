@@ -363,6 +363,84 @@ export interface PatrimonySnapshot {
   snapshotAt: string;
 }
 
+/* --- Canadá (Fase 16) ------------------------------------------------------ */
+
+export type CanadaDecisionCategory = "cidade" | "visto" | "prazo" | "moradia" | "trabalho" | "outro";
+export type CanadaDecisionStatus = "pendente" | "pesquisando" | "decidido";
+
+/** A pending/answered planning decision (e.g. "Qual cidade vamos morar?"). */
+export interface CanadaDecision {
+  id: ID;
+  category: CanadaDecisionCategory;
+  question: string;
+  answer: string | null; // null = ainda não decidido
+  status: CanadaDecisionStatus;
+  notes?: string;
+  decidedAt: string | null;
+  createdAt: string;
+}
+
+export type CanadaDocumentCategory = "passaporte" | "visto" | "civil" | "financeiro" | "outro";
+export type CanadaDocumentStatus = "pendente" | "em_andamento" | "concluido" | "nao_aplicavel";
+
+/** A document needed for the immigration process, owned by Lucas/Thaiane/ambos. */
+export interface CanadaDocument {
+  id: ID;
+  name: string;
+  owner: Assignee;
+  category: CanadaDocumentCategory;
+  status: CanadaDocumentStatus;
+  expiryDate: string | null;
+  deadline: string | null;
+  notes?: string;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+/** 'estudos' is reused for the LinkedIn/career checklist (Aba Estudos). */
+export type CanadaChecklistCategory = "brasil" | "chegada" | "instalacao" | "estudos";
+export type CanadaChecklistStatus = "pendente" | "concluido";
+export type CanadaChecklistPriority = "baixa" | "media" | "alta";
+
+export interface CanadaChecklistItem {
+  id: ID;
+  category: CanadaChecklistCategory;
+  title: string;
+  description?: string;
+  assignedTo: Assignee;
+  status: CanadaChecklistStatus;
+  priority: CanadaChecklistPriority;
+  dueDate: string | null;
+  completedAt: string | null;
+  createdAt: string;
+}
+
+/** A researched city candidate (comparator in Aba Logística). */
+export interface CanadaCity {
+  id: ID;
+  name: string;
+  province: string;
+  pros: string[];
+  cons: string[];
+  avgRent1br: number | null; // CAD
+  notes?: string;
+  isFavorite: boolean;
+  isChosen: boolean;
+  createdAt: string;
+}
+
+export type CanadaNoteCategory = "visto" | "cidade" | "trabalho" | "moradia" | "geral";
+
+/** A freeform research note (also used for career/English-level entries). */
+export interface CanadaNote {
+  id: ID;
+  title: string;
+  content: string;
+  category: CanadaNoteCategory;
+  createdBy: ID;
+  createdAt: string;
+}
+
 /* --- Minha Renda (Fase 15B) ----------------------------------------------- */
 
 export type IncomeSourceType = "fixo" | "variavel" | "beneficio";
@@ -454,6 +532,11 @@ export interface FlowTaskData {
   incomeProfiles: IncomeProfile[];
   incomeHistory: IncomeHistoryEntry[];
   monthlyExpenses: MonthlyExpense[];
+  canadaDecisions: CanadaDecision[];
+  canadaDocuments: CanadaDocument[];
+  canadaChecklist: CanadaChecklistItem[];
+  canadaCities: CanadaCity[];
+  canadaNotes: CanadaNote[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;
