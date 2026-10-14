@@ -81,6 +81,14 @@ export const RESERVE_ESTIMATE_TOTAL = RESERVE_ESTIMATE_DEFAULTS.reduce((s, i) =>
 /** Goal linkedModule marker shared by useCanada and the Metas module. */
 export const CANADA_GOAL_LINKED_MODULE = "canada";
 
+/**
+ * Real target for the "Reserva Canadá" goal (R$190.000 — decided by the
+ * couple), used only when no such goal exists yet and one must be created
+ * from scratch. Independent from RESERVE_ESTIMATE_TOTAL above, which is just
+ * the informational cost breakdown shown in the Financeiro tab.
+ */
+export const CANADA_GOAL_DEFAULT_TARGET = 190000;
+
 /* --------------------------------------------------------------------------- */
 /* Seed specs (idempotent, applied client-side — see useCanada.seedIfEmpty)    */
 /* --------------------------------------------------------------------------- */

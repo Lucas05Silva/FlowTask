@@ -8,51 +8,43 @@ import { Input, Select } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MonthYearFilter } from "./MonthYearFilter";
 import { formatBRL, formatDate } from "@/lib/utils";
 import { EXPENSE_CATEGORY_META } from "@/lib/constants";
 
 interface ExpenseListProps {
+  /** Already filtered by the shared month/year + visibility filter (FinancePage). */
   entries: FinanceEntry[];
+  month: number;
+  year: number;
+  onMonthChange: (month: number) => void;
+  onYearChange: (year: number) => void;
   onCreateClick: () => void;
   onEditClick: (entry: FinanceEntry) => void;
   onDeleteClick: (id: string) => void;
 }
 
-export function ExpenseList({ entries, onCreateClick, onEditClick, onDeleteClick }: ExpenseListProps) {
-  const now = new Date();
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth() + 1); // 1-indexed
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+export function ExpenseList({
+  entries,
+  month,
+  year,
+  onMonthChange,
+  onYearChange,
+  onCreateClick,
+  onEditClick,
+  onDeleteClick,
+}: ExpenseListProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
 
-  const years = [2025, 2026, 2027];
-  const months = [
-    { val: 1, label: "Janeiro" },
-    { val: 2, label: "Fevereiro" },
-    { val: 3, label: "Março" },
-    { val: 4, label: "Abril" },
-    { val: 5, label: "Maio" },
-    { val: 6, label: "Junho" },
-    { val: 7, label: "Julho" },
-    { val: 8, label: "Agosto" },
-    { val: 9, label: "Setembro" },
-    { val: 10, label: "Outubro" },
-    { val: 11, label: "Novembro" },
-    { val: 12, label: "Dezembro" },
-  ];
-
   // Filters logic
   const filteredEntries = useMemo(() => {
-    const pad = (n: number) => String(n).padStart(2, "0");
-    const monthKey = `${selectedYear}-${pad(selectedMonth)}`;
-
     return entries
       .filter((e) => e.type === "expense")
-      .filter((e) => e.date.slice(0, 7) === monthKey)
       .filter((e) => !selectedCategory || e.category === selectedCategory)
       .filter((e) => !searchQuery || e.description.toLowerCase().includes(searchQuery.toLowerCase()))
       .sort((a, b) => b.date.localeCompare(a.date));
-  }, [entries, selectedMonth, selectedYear, selectedCategory, searchQuery]);
+  }, [entries, selectedCategory, searchQuery]);
 
   const totalMonthlyExpense = useMemo(() => {
     return filteredEntries.reduce((sum, e) => sum + e.amount, 0);
@@ -75,32 +67,8 @@ export function ExpenseList({ entries, onCreateClick, onEditClick, onDeleteClick
           />
         </div>
 
-        {/* Month & Year */}
-        <div className="flex gap-2">
-          <Select
-            value={selectedMonth}
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value, 10))}
-            className="w-32"
-          >
-            {months.map((m) => (
-              <option key={m.val} value={m.val}>
-                {m.label}
-              </option>
-            ))}
-          </Select>
-
-          <Select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(parseInt(e.target.value, 10))}
-            className="w-24"
-          >
-            {years.map((y) => (
-              <option key={y} value={y}>
-                {y}
-              </option>
-            ))}
-          </Select>
-        </div>
+        {/* Month & Year (shared across tabs) */}
+        <MonthYearFilter month={month} year={year} onMonthChange={onMonthChange} onYearChange={onYearChange} />
 
         {/* Category */}
         <Select

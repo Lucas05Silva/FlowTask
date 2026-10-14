@@ -15,12 +15,15 @@ import { DebtList } from "./DebtList";
 import { FinancialGoalList } from "./FinancialGoalList";
 import { FinanceSuggestions } from "./FinanceSuggestions";
 import { MinhaRendaTab } from "./MinhaRendaTab";
+import { PersonalFinance } from "./PersonalFinance";
 import { FinanceModal } from "./FinanceModal";
 import { DebtModal } from "./DebtModal";
 import { GoalModal } from "./GoalModal";
 import { cn } from "@/lib/utils";
+import type { Assignee, FinanceEntry } from "@/types";
+import type { OwnerFilter } from "@/lib/finance-filter";
 
-type TabKey = "overview" | "incomes" | "expenses" | "debts" | "goals" | "suggestions" | "minharenda";
+type TabKey = "overview" | "incomes" | "expenses" | "debts" | "goals" | "suggestions" | "personal" | "minharenda";
 
 export function FinancePage() {
   const { celebrate } = useGamification();
@@ -39,6 +42,7 @@ export function FinancePage() {
     updateGoal,
     deleteGoal,
     depositToGoal,
+    getEntriesByMonth,
     getMonthlyTotals,
     getLast6MonthsTotals,
     getExpensesByCategory,
@@ -61,6 +65,7 @@ export function FinancePage() {
   const [financeModalOpen, setFinanceModalOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<any>(null);
   const [defaultEntryType, setDefaultEntryType] = useState<"income" | "expense">("expense");
+  const [fixedOwner, setFixedOwner] = useState<Assignee | null>(null);
 
   const [debtModalOpen, setDebtModalOpen] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState<any>(null);
@@ -68,14 +73,19 @@ export function FinancePage() {
   const [goalModalOpen, setGoalModalOpen] = useState(false);
   const [selectedGoal, setSelectedGoal] = useState<any>(null);
 
+  // Ajuste 1 — mês/ano compartilhado entre Visão Geral / Entradas / Saídas / Pessoal.
   const now = new Date();
-  const currentM = now.getMonth() + 1;
-  const currentY = now.getFullYear();
+  const [filterMonth, setFilterMonth] = useState(now.getMonth() + 1);
+  const [filterYear, setFilterYear] = useState(now.getFullYear());
+
+  // Ajuste 3 — visibilidade (Compartilhado por padrão) na Visão Geral + Entradas/Saídas.
+  const [ownerFilter, setOwnerFilter] = useState<OwnerFilter>("compartilhado");
 
   // Derived states for sub-tabs
-  const monthlyTotals = getMonthlyTotals(currentM, currentY);
+  const monthlyTotals = getMonthlyTotals(filterMonth, filterYear, ownerFilter);
   const last6Months = getLast6MonthsTotals();
-  const expensesByCategory = getExpensesByCategory(currentM, currentY);
+  const expensesByCategory = getExpensesByCategory(filterMonth, filterYear, ownerFilter);
+  const monthEntries = getEntriesByMonth(filterMonth, filterYear, ownerFilter);
   const projection = getProjection();
   const suggestions = getSuggestions();
 
@@ -86,6 +96,7 @@ export function FinancePage() {
     { key: "debts", label: "Dívidas" },
     { key: "goals", label: "Metas" },
     { key: "suggestions", label: "Sugestões" },
+    { key: "personal", label: "Pessoal" },
     // "Minha Renda" is a personal dashboard — only visible for Lucas.
     ...(isLucas ? [{ key: "minharenda" as TabKey, label: "Minha Renda", icon: TrendingUp }] : []),
   ];
@@ -94,14 +105,16 @@ export function FinancePage() {
   const fixedExpensesTotal = isLucas ? getTotalExpenses() : 0;
 
   // Handlers for finance entries
-  const handleOpenFinanceModal = (type: "income" | "expense") => {
+  const handleOpenFinanceModal = (type: "income" | "expense", owner: Assignee | null = null) => {
     setSelectedEntry(null);
     setDefaultEntryType(type);
+    setFixedOwner(owner);
     setFinanceModalOpen(true);
   };
 
   const handleEditFinance = (entry: any) => {
     setSelectedEntry(entry);
+    setFixedOwner(null); // editing keeps the Visibilidade field editable (prefilled from entry.owner)
     setFinanceModalOpen(true);
   };
 
@@ -193,7 +206,7 @@ export function FinancePage() {
       <div className="mt-4">
         {activeTab === "overview" && (
           <FinanceOverview
-            finances={finances}
+            monthEntries={monthEntries}
             debts={debts}
             monthlyTotals={monthlyTotals}
             last6Months={last6Months}
@@ -201,13 +214,23 @@ export function FinancePage() {
             projection={projection}
             investmentCapacity={investmentCapacity}
             fixedExpenses={fixedExpensesTotal}
-            onOpenModal={handleOpenFinanceModal}
+            onOpenModal={(type) => handleOpenFinanceModal(type)}
+            month={filterMonth}
+            year={filterYear}
+            onMonthChange={setFilterMonth}
+            onYearChange={setFilterYear}
+            ownerFilter={ownerFilter}
+            onOwnerFilterChange={setOwnerFilter}
           />
         )}
         {activeTab === "minharenda" && <MinhaRendaTab />}
         {activeTab === "incomes" && (
           <IncomeList
-            entries={finances}
+            entries={monthEntries}
+            month={filterMonth}
+            year={filterYear}
+            onMonthChange={setFilterMonth}
+            onYearChange={setFilterYear}
             onCreateClick={() => handleOpenFinanceModal("income")}
             onEditClick={handleEditFinance}
             onDeleteClick={deleteEntry}
@@ -215,10 +238,30 @@ export function FinancePage() {
         )}
         {activeTab === "expenses" && (
           <ExpenseList
-            entries={finances}
+            entries={monthEntries}
+            month={filterMonth}
+            year={filterYear}
+            onMonthChange={setFilterMonth}
+            onYearChange={setFilterYear}
             onCreateClick={() => handleOpenFinanceModal("expense")}
             onEditClick={handleEditFinance}
             onDeleteClick={deleteEntry}
+          />
+        )}
+        {activeTab === "personal" && (
+          <PersonalFinance
+            lucasEntries={getEntriesByMonth(filterMonth, filterYear, "lucas")}
+            thaianeEntries={getEntriesByMonth(filterMonth, filterYear, "thaiane")}
+            month={filterMonth}
+            year={filterYear}
+            onMonthChange={setFilterMonth}
+            onYearChange={setFilterYear}
+            onCreate={(owner: Assignee) => handleOpenFinanceModal("expense", owner)}
+            onEdit={(entry: FinanceEntry) => {
+              setSelectedEntry(entry);
+              setFixedOwner(entry.owner ?? null);
+              setFinanceModalOpen(true);
+            }}
           />
         )}
         {activeTab === "debts" && (
@@ -257,6 +300,7 @@ export function FinancePage() {
         open={financeModalOpen}
         entry={selectedEntry}
         defaultType={defaultEntryType}
+        fixedOwner={fixedOwner}
         onClose={() => setFinanceModalOpen(false)}
         onCreate={handleCreateFinance}
         onUpdate={updateEntry}

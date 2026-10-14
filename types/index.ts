@@ -137,6 +137,8 @@ export interface FinanceEntry {
   tags: string[];
   isRecurring: boolean;
   recurrenceRule: FinanceRecurrenceRule | null;
+  /** null/undefined = shared (couple) entry. "lucas"/"thaiane" = personal entry. */
+  owner?: Assignee | null;
   createdBy: ID;
   createdAt: string;
 }

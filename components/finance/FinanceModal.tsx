@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Star, Trash2 } from "lucide-react";
-import type { FinanceEntry, FinanceType, FinanceCategory, FinanceRecurrenceRule } from "@/types";
+import type { FinanceEntry, FinanceType, FinanceCategory, FinanceRecurrenceRule, Assignee } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select } from "@/components/ui/Input";
@@ -14,14 +14,23 @@ interface FinanceModalProps {
   open: boolean;
   entry: FinanceEntry | null;
   defaultType?: FinanceType;
+  /** When set (aba Pessoal), the entry is locked to this owner and Visibilidade is hidden. */
+  fixedOwner?: Assignee | null;
   onClose: () => void;
   onCreate: (form: any) => any;
   onUpdate: (id: string, form: any) => void;
   onDelete: (id: string) => void;
 }
 
-function emptyForm(type: FinanceType = "expense"): any {
+const VISIBILITY_OPTIONS: { value: Assignee | null; label: string }[] = [
+  { value: null, label: "Compartilhado" },
+  { value: "lucas", label: "Pessoal (Lucas)" },
+  { value: "thaiane", label: "Pessoal (Thaiane)" },
+];
+
+function emptyForm(type: FinanceType = "expense", owner: Assignee | null = null): any {
   return {
+    owner,
     type,
     amount: 0,
     description: "",
@@ -35,6 +44,7 @@ function emptyForm(type: FinanceType = "expense"): any {
 
 function fromEntry(e: FinanceEntry): any {
   return {
+    owner: e.owner ?? null,
     type: e.type,
     amount: e.amount,
     description: e.description,
@@ -50,6 +60,7 @@ export function FinanceModal({
   open,
   entry,
   defaultType = "expense",
+  fixedOwner = null,
   onClose,
   onCreate,
   onUpdate,
@@ -63,12 +74,12 @@ export function FinanceModal({
 
   useEffect(() => {
     if (open) {
-      setForm(entry ? fromEntry(entry) : emptyForm(defaultType));
+      setForm(entry ? fromEntry(entry) : emptyForm(defaultType, fixedOwner));
       setTagInput("");
       setError(null);
       setConfirmDelete(false);
     }
-  }, [open, entry, defaultType]);
+  }, [open, entry, defaultType, fixedOwner]);
 
   function patch(p: Partial<any>) {
     setForm((f: any) => {
@@ -164,6 +175,34 @@ export function FinanceModal({
             >
               Entrada (Receita)
             </button>
+          </div>
+        )}
+
+        {/* Visibilidade (hidden when launched from the Pessoal tab) */}
+        {fixedOwner ? (
+          <p className="rounded-input bg-brand/10 px-3 py-2 text-xs font-medium text-brand">
+            Lançamento pessoal de {fixedOwner === "lucas" ? "Lucas" : "Thaiane"}
+          </p>
+        ) : (
+          <div>
+            <Label>Visibilidade</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {VISIBILITY_OPTIONS.map((o) => (
+                <button
+                  key={o.label}
+                  type="button"
+                  onClick={() => patch({ owner: o.value })}
+                  className={cn(
+                    "rounded-input border px-2 py-2 text-xs font-medium transition-colors",
+                    (form.owner ?? null) === o.value
+                      ? "border-brand bg-brand/10 text-brand"
+                      : "border-line text-muted hover:bg-panel/60",
+                  )}
+                >
+                  {o.label}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 

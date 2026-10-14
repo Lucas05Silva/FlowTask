@@ -5,11 +5,14 @@ import { ArrowUpRight, ArrowDownRight, TrendingUp, Info } from "lucide-react";
 import type { FinanceEntry, Debt } from "@/types";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
-import { formatBRL, formatDate } from "@/lib/utils";
+import { formatBRL, formatDate, cn } from "@/lib/utils";
 import { FINANCE_CATEGORY_META } from "@/lib/constants";
+import { OWNER_FILTER_OPTIONS, monthLabel, type OwnerFilter } from "@/lib/finance-filter";
+import { MonthYearFilter } from "./MonthYearFilter";
 
 interface FinanceOverviewProps {
-  finances: FinanceEntry[];
+  /** Entries of the selected month, already filtered by visibility. */
+  monthEntries: FinanceEntry[];
   debts: Debt[];
   monthlyTotals: { income: number; expense: number; balance: number };
   last6Months: { month: string; label: string; income: number; expense: number }[];
@@ -18,10 +21,16 @@ interface FinanceOverviewProps {
   investmentCapacity?: number;
   fixedExpenses?: number;
   onOpenModal: (type: "income" | "expense") => void;
+  month: number;
+  year: number;
+  onMonthChange: (month: number) => void;
+  onYearChange: (year: number) => void;
+  ownerFilter: OwnerFilter;
+  onOwnerFilterChange: (filter: OwnerFilter) => void;
 }
 
 export function FinanceOverview({
-  finances,
+  monthEntries,
   debts,
   monthlyTotals,
   last6Months,
@@ -30,7 +39,14 @@ export function FinanceOverview({
   investmentCapacity,
   fixedExpenses,
   onOpenModal,
+  month,
+  year,
+  onMonthChange,
+  onYearChange,
+  ownerFilter,
+  onOwnerFilterChange,
 }: FinanceOverviewProps) {
+  const selectedMonthKey = `${year}-${String(month).padStart(2, "0")}`;
   const [hoveredBar, setHoveredBar] = useState<{ month: string; type: "income" | "expense"; amount: number } | null>(null);
 
   // 1. Total active debts
@@ -40,12 +56,12 @@ export function FinanceOverview({
       .reduce((sum, d) => sum + (d.totalAmount - d.paidAmount), 0);
   }, [debts]);
 
-  // 2. Recent transactions (last 5)
+  // 2. Recent transactions (last 5 of the selected month)
   const recentTransactions = useMemo(() => {
-    return [...finances]
+    return [...monthEntries]
       .sort((a, b) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt))
       .slice(0, 5);
-  }, [finances]);
+  }, [monthEntries]);
 
   // Calculations for 6 Months Bar Chart scale
   const barChartMax = useMemo(() => {
@@ -76,6 +92,27 @@ export function FinanceOverview({
 
   return (
     <div className="space-y-6">
+      {/* Filtros: mês/ano + visibilidade */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <MonthYearFilter month={month} year={year} onMonthChange={onMonthChange} onYearChange={onYearChange} />
+        <div className="flex rounded-input bg-panel p-1" role="group" aria-label="Visibilidade dos lançamentos">
+          {OWNER_FILTER_OPTIONS.map((o) => (
+            <button
+              key={o.value}
+              type="button"
+              onClick={() => onOwnerFilterChange(o.value)}
+              aria-pressed={ownerFilter === o.value}
+              className={cn(
+                "rounded-[6px] px-3 py-1.5 text-xs font-medium transition-all",
+                ownerFilter === o.value ? "bg-surface text-brand shadow-soft font-semibold" : "text-muted hover:text-content",
+              )}
+            >
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* 4 Cards Resumo */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Saldo */}
@@ -187,8 +224,15 @@ export function FinanceOverview({
                 const incomePct = (m.income / barChartMax) * 100;
                 const expensePct = (m.expense / barChartMax) * 100;
 
+                const isSelected = m.month === selectedMonthKey;
                 return (
-                  <div key={m.month} className="flex flex-col items-center gap-1.5">
+                  <div
+                    key={m.month}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 rounded-input px-1 pt-1 transition-colors",
+                      isSelected && "bg-brand/10 ring-1 ring-brand/30",
+                    )}
+                  >
                     <div className="flex items-end gap-1.5 h-36 w-12 justify-center">
                       {/* Income bar */}
                       <div
@@ -205,7 +249,7 @@ export function FinanceOverview({
                         onMouseLeave={() => setHoveredBar(null)}
                       />
                     </div>
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-muted mt-1">
+                    <span className={cn("text-[11px] font-semibold uppercase tracking-wider mt-1", isSelected ? "text-brand" : "text-muted")}>
                       {m.label}
                     </span>
                   </div>
@@ -240,7 +284,7 @@ export function FinanceOverview({
 
         {/* Categoria Donut (Mês Atual) */}
         <Card>
-          <CardTitle className="mb-4 text-base font-semibold">Gastos por Categoria (Mês Atual)</CardTitle>
+          <CardTitle className="mb-4 text-base font-semibold">{`Gastos por Categoria (${monthLabel(month)}/${year})`}</CardTitle>
           {expensesByCategory.length === 0 ? (
             <div className="flex h-52 items-center justify-center text-sm text-muted">
               Nenhuma despesa registrada neste mês.
@@ -358,10 +402,10 @@ export function FinanceOverview({
 
         {/* Últimas Movimentações */}
         <Card className="lg:col-span-2">
-          <CardTitle className="mb-4 text-base font-semibold">Últimos Lançamentos</CardTitle>
+          <CardTitle className="mb-4 text-base font-semibold">{`Lançamentos de ${monthLabel(month)}/${year}`}</CardTitle>
           {recentTransactions.length === 0 ? (
             <div className="flex h-40 items-center justify-center text-sm text-muted">
-              Nenhuma transação lançada.
+              Nenhuma transação lançada neste mês.
             </div>
           ) : (
             <div className="overflow-x-auto">

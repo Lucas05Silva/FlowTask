@@ -11,12 +11,14 @@ import type {
   FinancialGoalCategory,
   Achievement,
   FlowTaskData,
+  Assignee,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO, daysUntil } from "@/lib/utils";
+import { matchesOwnerFilter, type OwnerFilter } from "@/lib/finance-filter";
 
 export interface EntryFormData {
   type: FinanceType;
@@ -27,6 +29,8 @@ export interface EntryFormData {
   tags: string[];
   isRecurring: boolean;
   recurrenceRule: FinanceRecurrenceRule | null;
+  /** null = compartilhado (default); "lucas"/"thaiane" = lançamento pessoal. */
+  owner?: Assignee | null;
 }
 
 export interface DebtFormData {
@@ -160,6 +164,9 @@ export function useFinance() {
           tags: form.tags,
           isRecurring: form.isRecurring,
           recurrenceRule: form.isRecurring ? form.recurrenceRule : null,
+          // Only personal entries carry `owner` — shared ones omit the key entirely,
+          // so they keep saving even before migration 0010 is applied.
+          ...(form.owner ? { owner: form.owner } : {}),
           createdBy: userId,
           createdAt: new Date().toISOString(),
         };
@@ -179,7 +186,13 @@ export function useFinance() {
     (id: string, patch: Partial<FinanceEntry>) => {
       updateData((d) => ({
         ...d,
-        finances: d.finances.map((f) => (f.id === id ? { ...f, ...patch } : f)),
+        finances: d.finances.map((f) => {
+          if (f.id !== id) return f;
+          const merged = { ...f, ...patch };
+          // Shared → shared edit: don't introduce an `owner: null` key (see createEntry).
+          if (merged.owner == null && f.owner == null) delete merged.owner;
+          return merged;
+        }),
       }));
     },
     []
@@ -435,17 +448,19 @@ export function useFinance() {
   // ----------------------------------------------------
 
   const getEntriesByMonth = useCallback(
-    (month: number, year: number): FinanceEntry[] => {
+    (month: number, year: number, ownerFilter: OwnerFilter = "compartilhado"): FinanceEntry[] => {
       const pad = (n: number) => String(n).padStart(2, "0");
       const key = `${year}-${pad(month)}`;
-      return allFinances.filter((f) => f.date.slice(0, 7) === key);
+      return allFinances
+        .filter((f) => f.date.slice(0, 7) === key)
+        .filter((f) => matchesOwnerFilter(f, ownerFilter));
     },
     [allFinances]
   );
 
   const getMonthlyTotals = useCallback(
-    (month: number, year: number) => {
-      const entries = getEntriesByMonth(month, year);
+    (month: number, year: number, ownerFilter: OwnerFilter = "compartilhado") => {
+      const entries = getEntriesByMonth(month, year, ownerFilter);
       let income = 0;
       let expense = 0;
       for (const e of entries) {
@@ -493,8 +508,8 @@ export function useFinance() {
   }, [allFinances]);
 
   const getExpensesByCategory = useCallback(
-    (month: number, year: number) => {
-      const entries = getEntriesByMonth(month, year).filter((f) => f.type === "expense");
+    (month: number, year: number, ownerFilter: OwnerFilter = "compartilhado") => {
+      const entries = getEntriesByMonth(month, year, ownerFilter).filter((f) => f.type === "expense");
       const total = entries.reduce((acc, curr) => acc + curr.amount, 0);
 
       const map = new Map<string, number>();

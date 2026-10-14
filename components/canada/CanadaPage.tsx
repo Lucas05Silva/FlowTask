@@ -7,7 +7,7 @@ import { useGoals } from "@/hooks/useGoals";
 import { useInvestments } from "@/hooks/useInvestments";
 import { useData } from "@/hooks/useData";
 import { useGamification } from "@/components/providers/GamificationProvider";
-import { CANADA_GOAL_LINKED_MODULE, RESERVE_ESTIMATE_TOTAL } from "@/lib/canada-data";
+import { CANADA_GOAL_LINKED_MODULE, CANADA_GOAL_DEFAULT_TARGET, RESERVE_ESTIMATE_TOTAL } from "@/lib/canada-data";
 import { pct, cn } from "@/lib/utils";
 import { CanadaStatusPanel } from "./CanadaStatusPanel";
 import { CanadaDecisions } from "./CanadaDecisions";
@@ -34,7 +34,7 @@ export function CanadaPage() {
   const data = useData();
 
   const canada = useCanada();
-  const { goals, createGoal, updateProgress } = useGoals();
+  const { goals, createGoal, updateGoal, deleteGoal, updateProgress } = useGoals();
   const { investments } = useInvestments();
 
   useEffect(() => {
@@ -42,14 +42,48 @@ export function CanadaPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const canadaGoal = goals.find((g) => g.linkedModule === CANADA_GOAL_LINKED_MODULE);
+  /**
+   * Resolve the real "Reserva Canadá" goal — matching by linkedModule OR by
+   * title, since a goal created earlier through Metas/Financeiro's own
+   * GoalModal can never set linkedModule: "canada". Among matches, prefer
+   * the one that isn't the untouched 50k auto-seed placeholder (same title,
+   * target === RESERVE_ESTIMATE_TOTAL, current === 0) — that one is the
+   * duplicate created on a previous visit before this fix, and gets cleaned
+   * up below.
+   */
+  const normalize = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+  const isUntouchedPlaceholder = (g: (typeof goals)[number]) =>
+    g.targetAmount === RESERVE_ESTIMATE_TOTAL && g.currentAmount === 0;
+  const canadaCandidates = goals.filter(
+    (g) => g.linkedModule === CANADA_GOAL_LINKED_MODULE || normalize(g.title).includes("canada"),
+  );
+  const canadaGoal = canadaCandidates.find((g) => !isUntouchedPlaceholder(g)) ?? canadaCandidates[0];
+
+  // One-time cleanup: delete any leftover untouched-placeholder duplicate.
   useEffect(() => {
-    if (canadaGoal) return;
+    if (!canadaGoal) return;
+    for (const g of canadaCandidates) {
+      if (g.id !== canadaGoal.id && isUntouchedPlaceholder(g)) deleteGoal(g.id);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [goals]);
+
+  // Backfill tagging so the resolved goal matches directly by linkedModule next time.
+  useEffect(() => {
+    if (!canadaGoal) return;
+    if (canadaGoal.linkedModule === CANADA_GOAL_LINKED_MODULE && canadaGoal.category === "canada") return;
+    updateGoal(canadaGoal.id, { linkedModule: CANADA_GOAL_LINKED_MODULE, category: "canada" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canadaGoal?.id]);
+
+  // Only create a brand-new goal when truly nothing matches yet.
+  useEffect(() => {
+    if (canadaCandidates.length > 0) return;
     createGoal({
       title: "Reserva Canadá",
       description: "Reserva financeira para passagens, depósito, visto e primeiros meses no Canadá.",
       type: "financeira",
-      targetAmount: RESERVE_ESTIMATE_TOTAL,
+      targetAmount: CANADA_GOAL_DEFAULT_TARGET,
       currentAmount: 0,
       deadline: null,
       category: "canada",
@@ -58,10 +92,10 @@ export function CanadaPage() {
       contributionType: "value",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canadaGoal]);
+  }, [canadaCandidates.length]);
 
   const current = canadaGoal?.currentAmount ?? 0;
-  const target = canadaGoal?.targetAmount ?? RESERVE_ESTIMATE_TOTAL;
+  const target = canadaGoal?.targetAmount ?? CANADA_GOAL_DEFAULT_TARGET;
   const financialPct = pct(current, target);
 
   const netMonthly = useMemo(() => {
