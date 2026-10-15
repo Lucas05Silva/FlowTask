@@ -22,7 +22,8 @@ type CollKey =
   | "userAchievements" | "taskPrompts" | "notes"
   | "investments" | "investmentContributions" | "patrimonySnapshots"
   | "incomeProfiles" | "incomeHistory" | "monthlyExpenses"
-  | "canadaDecisions" | "canadaDocuments" | "canadaChecklist" | "canadaCities" | "canadaNotes";
+  | "canadaDecisions" | "canadaDocuments" | "canadaChecklist" | "canadaCities" | "canadaNotes"
+  | "monthlyPlans" | "monthlyPlanItems" | "financialIdeas";
 
 /** FlowTaskData array field → Supabase table. */
 const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
@@ -49,6 +50,10 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "canadaChecklist", table: "canada_checklist" },
   { key: "canadaCities", table: "canada_cities" },
   { key: "canadaNotes", table: "canada_notes" },
+  // Per-user (RLS: user_id = auth.uid()) — hydrate only returns the logged-in user's rows.
+  { key: "monthlyPlans", table: "monthly_plans" },
+  { key: "monthlyPlanItems", table: "monthly_plan_items" },
+  { key: "financialIdeas", table: "financial_ideas" },
 ];
 const WEDDING_CONFIG_TABLE = "wedding_config";
 

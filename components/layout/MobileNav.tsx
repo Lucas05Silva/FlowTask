@@ -82,6 +82,11 @@ export function MobileNav() {
                     >
                       <Icon className="size-6" aria-hidden />
                       {item.label}
+                      {item.badge && (
+                        <span className="-mt-1 rounded-badge bg-cyan/20 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-cyan-dark">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}

@@ -443,6 +443,55 @@ export interface CanadaNote {
   createdAt: string;
 }
 
+/* --- Organização (cockpit financeiro pessoal) ------------------------------ */
+
+/** One plan per user per month — id is deterministic: `mp_<userId>_<yyyy-mm>`. */
+export interface MonthlyPlan {
+  id: ID;
+  userId: ID;
+  month: number; // 1-12
+  year: number;
+  totalIncome: number; // receita planejada
+  notes: string; // reflexão livre do mês
+  /** Patrimônio (metas + investimentos) registrado neste mês — alimenta o gráfico. */
+  patrimonyTotal?: number | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type PlanItemCategory = "fixa" | "variavel" | "investimento" | "meta" | "divida" | "reserva";
+export type PlanItemLinkType = "debt" | "financial_goal" | "investment";
+
+export interface MonthlyPlanItem {
+  id: ID;
+  planId: ID;
+  userId: ID;
+  category: PlanItemCategory;
+  name: string;
+  plannedAmount: number;
+  actualAmount: number;
+  linkedType: PlanItemLinkType | null;
+  linkedId: string | null;
+  isPaid: boolean;
+  paidAt: string | null;
+  /** finance_entry created when an unlinked conta was marked paid (deleted on undo). */
+  paidRecordId?: string | null;
+  notes?: string;
+  createdAt: string;
+}
+
+export type IdeaDestination = "goal" | "task" | "note";
+
+export interface FinancialIdea {
+  id: ID;
+  userId: ID;
+  planId: ID;
+  content: string;
+  promotedTo: IdeaDestination | null;
+  promotedId: string | null;
+  createdAt: string;
+}
+
 /* --- Minha Renda (Fase 15B) ----------------------------------------------- */
 
 export type IncomeSourceType = "fixo" | "variavel" | "beneficio";
@@ -539,6 +588,9 @@ export interface FlowTaskData {
   canadaChecklist: CanadaChecklistItem[];
   canadaCities: CanadaCity[];
   canadaNotes: CanadaNote[];
+  monthlyPlans: MonthlyPlan[];
+  monthlyPlanItems: MonthlyPlanItem[];
+  financialIdeas: FinancialIdea[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;

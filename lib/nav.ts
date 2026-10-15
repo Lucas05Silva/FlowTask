@@ -9,6 +9,7 @@ import {
   HeartHandshake,
   NotebookPen,
   MapPin,
+  ClipboardList,
 } from "lucide-react";
 
 export interface NavItem {
@@ -17,6 +18,8 @@ export interface NavItem {
   icon: LucideIcon;
   /** Shown in the mobile bottom tab bar (max 5). */
   primaryMobile?: boolean;
+  /** Small pill next to the label (e.g. "Pessoal" for per-user pages). */
+  badge?: string;
 }
 
 export const NAV_ITEMS: NavItem[] = [
@@ -26,6 +29,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/canada", label: "Canadá", icon: MapPin, primaryMobile: true },
   { href: "/financeiro", label: "Financeiro", icon: Wallet, primaryMobile: true },
   { href: "/investimentos", label: "Investimentos", icon: TrendingUp },
+  { href: "/organizacao", label: "Organização", icon: ClipboardList, badge: "Pessoal" },
   { href: "/metas", label: "Metas", icon: Target },
   { href: "/notas", label: "Notas", icon: NotebookPen },
   { href: "/casamento", label: "Casamento", icon: HeartHandshake },

@@ -48,6 +48,14 @@ export function Sidebar() {
               )}
               <Icon className={cn("size-5 shrink-0", active && "text-brand")} aria-hidden />
               <span className="hidden lg:inline">{item.label}</span>
+              {item.badge && (
+                <span className="hidden rounded-badge bg-cyan/20 px-1.5 py-px text-[9px] font-bold uppercase tracking-wide text-cyan-dark lg:ml-auto lg:inline">
+                  {item.badge}
+                </span>
+              )}
+              {item.badge && (
+                <span className="absolute right-1.5 top-1.5 size-1.5 rounded-full bg-cyan-dark lg:hidden" aria-hidden />
+              )}
             </Link>
           );
         })}
