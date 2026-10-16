@@ -3,6 +3,8 @@
 import { useCallback, useMemo } from "react";
 import type {
   Assignee,
+  Dream,
+  DreamColor,
   FinanceEntry,
   FinancialIdea,
   Goal,
@@ -14,7 +16,7 @@ import type {
   PlanItemLinkType,
   Task,
 } from "@/types";
-import { updateData } from "@/lib/data/store";
+import { getHydrated, updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useFinance } from "@/hooks/useFinance";
@@ -22,7 +24,15 @@ import { useInvestments } from "@/hooks/useInvestments";
 import { KNOWN_USERS } from "@/lib/data/initialState";
 import { XP, taskXp, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
-import { computeDistribution, planId as buildPlanId, projectGoal, shiftMonth } from "@/lib/organizacao";
+import {
+  computeDistribution,
+  dreamEmoji,
+  planId as buildPlanId,
+  projectAmounts,
+  projectGoal,
+  shiftMonth,
+  type AmountProjection,
+} from "@/lib/organizacao";
 
 export interface PlanItemFormData {
   name: string;
@@ -39,6 +49,25 @@ export interface PromoteFormData {
   date: string | null;
   /** goal only */
   targetAmount: number;
+}
+
+export interface DreamFormData {
+  name: string;
+  emoji: string;
+  targetAmount: number;
+  currentAmount: number;
+  linkedGoalId: string | null;
+  color: DreamColor;
+  notes: string;
+}
+
+/** A dream with its effective values (live from the linked goal, when linked). */
+export interface ResolvedDream {
+  dream: Dream;
+  target: number;
+  current: number;
+  linkedGoal: Goal | null;
+  projection: AmountProjection;
 }
 
 /** Result of marking an item as paid — the page turns it into toasts/confetti. */
@@ -377,6 +406,97 @@ export function useOrganizacao(month: number, year: number) {
     return out;
   }, [data.monthlyPlans, userId, livePatrimony]);
 
+  /* ---- dreams (per-user cards; linked ones mirror a financial goal live) ---- */
+  const dreams = useMemo(
+    () =>
+      data.dreams
+        .filter((d) => d.userId === userId)
+        .sort((a, b) => a.displayOrder - b.displayOrder || a.createdAt.localeCompare(b.createdAt)),
+    [data.dreams, userId],
+  );
+
+  const resolvedDreams = useMemo<ResolvedDream[]>(
+    () =>
+      dreams.map((dream) => {
+        const linkedGoal = dream.linkedGoalId ? financialGoals.find((g) => g.id === dream.linkedGoalId) ?? null : null;
+        const target = linkedGoal ? linkedGoal.targetAmount : dream.targetAmount;
+        const current = linkedGoal ? linkedGoal.currentAmount : dream.currentAmount;
+        return { dream, target, current, linkedGoal, projection: projectAmounts(target, current, avgMonthlySavings) };
+      }),
+    [dreams, financialGoals, avgMonthlySavings],
+  );
+
+  const saveDream = useCallback(
+    (form: DreamFormData, id?: string) => {
+      if (!userId) return;
+      const fields = {
+        name: form.name.trim(),
+        emoji: form.emoji || "⭐",
+        targetAmount: form.targetAmount,
+        currentAmount: form.currentAmount,
+        linkedGoalId: form.linkedGoalId,
+        color: form.color,
+        notes: form.notes.trim() || undefined,
+      };
+      updateData((d) => {
+        if (id) return { ...d, dreams: d.dreams.map((x) => (x.id === id ? { ...x, ...fields } : x)) };
+        const order = d.dreams.filter((x) => x.userId === userId).reduce((m, x) => Math.max(m, x.displayOrder), -1) + 1;
+        const dream: Dream = { id: uid("dream"), userId, displayOrder: order, createdAt: new Date().toISOString(), ...fields };
+        return { ...d, dreams: [...d.dreams, dream] };
+      });
+    },
+    [userId],
+  );
+
+  const deleteDream = useCallback((id: string) => {
+    updateData((d) => ({ ...d, dreams: d.dreams.filter((x) => x.id !== id) }));
+  }, []);
+
+  /** Inline "valor atual" edit — only meaningful for unlinked dreams. */
+  const setDreamCurrent = useCallback((id: string, value: number) => {
+    updateData((d) => ({ ...d, dreams: d.dreams.map((x) => (x.id === id ? { ...x, currentAmount: value } : x)) }));
+  }, []);
+
+  /** Persist a new order (ids in display order). */
+  const reorderDreams = useCallback((orderedIds: string[]) => {
+    const pos = new Map(orderedIds.map((id, i) => [id, i]));
+    updateData((d) => ({
+      ...d,
+      dreams: d.dreams.map((x) => (pos.has(x.id) && x.displayOrder !== pos.get(x.id) ? { ...x, displayOrder: pos.get(x.id)! } : x)),
+    }));
+  }, []);
+
+  /**
+   * One-time migration from the old goal-based cards: if this user has no
+   * dreams yet, create one (linked) per open financial goal. Waits for
+   * hydration so it never seeds from an empty pre-load state.
+   */
+  const seedDreamsFromGoals = useCallback(() => {
+    if (!userId || typeof window === "undefined" || !getHydrated()) return;
+    const flag = `flowtask_dreams_seed_v1_${userId}`;
+    if (window.localStorage.getItem(flag)) return;
+    if (dreams.length > 0) {
+      window.localStorage.setItem(flag, "1");
+      return;
+    }
+    const open = financialGoals.filter((g) => g.status !== "concluida" && g.targetAmount > 0);
+    if (open.length === 0) return; // nothing to migrate yet — try again on a later visit
+    window.localStorage.setItem(flag, "1");
+    const palette: DreamColor[] = ["roxo", "cyan", "verde", "dourado"];
+    const nowIso = new Date().toISOString();
+    updateData((d) => ({
+      ...d,
+      dreams: [
+        ...d.dreams,
+        ...open.map((g, i) => ({
+          id: uid("dream"), userId, name: g.title, emoji: dreamEmoji(g), targetAmount: g.targetAmount,
+          currentAmount: g.currentAmount, linkedGoalId: g.id, color: palette[i % palette.length],
+          displayOrder: i, createdAt: nowIso,
+        })),
+      ],
+    }));
+  }, [userId, dreams.length, financialGoals]);
+
   return {
     me,
     plan,
@@ -408,5 +528,13 @@ export function useOrganizacao(month: number, year: number) {
     goalProjections,
     livePatrimony,
     patrimonyHistory,
+    // dreams
+    resolvedDreams,
+    allFinancialGoals: financialGoals,
+    saveDream,
+    deleteDream,
+    setDreamCurrent,
+    reorderDreams,
+    seedDreamsFromGoals,
   };
 }

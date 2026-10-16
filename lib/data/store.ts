@@ -23,7 +23,7 @@ type CollKey =
   | "investments" | "investmentContributions" | "patrimonySnapshots"
   | "incomeProfiles" | "incomeHistory" | "monthlyExpenses"
   | "canadaDecisions" | "canadaDocuments" | "canadaChecklist" | "canadaCities" | "canadaNotes"
-  | "monthlyPlans" | "monthlyPlanItems" | "financialIdeas";
+  | "monthlyPlans" | "monthlyPlanItems" | "financialIdeas" | "dreams";
 
 /** FlowTaskData array field → Supabase table. */
 const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
@@ -54,6 +54,7 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "monthlyPlans", table: "monthly_plans" },
   { key: "monthlyPlanItems", table: "monthly_plan_items" },
   { key: "financialIdeas", table: "financial_ideas" },
+  { key: "dreams", table: "dreams" },
 ];
 const WEDDING_CONFIG_TABLE = "wedding_config";
 

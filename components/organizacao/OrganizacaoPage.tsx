@@ -15,6 +15,7 @@ import { EmptyPlanState } from "./EmptyPlanState";
 import { MonthOverview } from "./MonthOverview";
 import { DistributionSection } from "./DistributionSection";
 import { FutureSection } from "./FutureSection";
+import { DreamsSection } from "./DreamsSection";
 import { ReflectionSection } from "./ReflectionSection";
 
 export function OrganizacaoPage() {
@@ -37,6 +38,10 @@ export function OrganizacaoPage() {
     if (!isCurrent || !plan) return;
     if (plan.patrimonyTotal !== livePatrimony) updatePlan({ patrimonyTotal: livePatrimony });
   }, [isCurrent, plan, livePatrimony, updatePlan]);
+
+  // One-time: turn the old goal-based dream cards into editable dreams.
+  const { seedDreamsFromGoals } = org;
+  useEffect(() => seedDreamsFromGoals(), [seedDreamsFromGoals]);
 
   const go = (delta: number) => {
     const next = shiftMonth(month, year, delta);
@@ -160,7 +165,19 @@ export function OrganizacaoPage() {
             avgMonthlySavings={org.avgMonthlySavings}
             projections={org.goalProjections}
             history={org.patrimonyHistory}
-          />
+          >
+            <DreamsSection
+              dreams={org.resolvedDreams}
+              goals={org.allFinancialGoals}
+              onSave={(form, id) => {
+                org.saveDream(form, id);
+                toast({ variant: "success", title: id ? "Sonho atualizado ✨" : "Novo sonho criado ✨" });
+              }}
+              onDelete={org.deleteDream}
+              onSetCurrent={org.setDreamCurrent}
+              onReorder={org.reorderDreams}
+            />
+          </FutureSection>
           <ReflectionSection
             key={org.plan.id}
             monthLabel={`${monthName(month)}/${year}`}

@@ -76,6 +76,7 @@ export function emptyState(): FlowTaskData {
     monthlyPlans: [],
     monthlyPlanItems: [],
     financialIdeas: [],
+    dreams: [],
     weddingDate: null,
     weddingVenueName: null,
     weddingVenueAddress: null,

@@ -2,7 +2,7 @@
  * Organização — metadata and pure helpers (distribution, projection, dates).
  * Kept free of React so the hook and components share one source of truth.
  */
-import type { Goal, MonthlyPlanItem, PlanItemCategory } from "@/types";
+import type { DreamColor, Goal, MonthlyPlanItem, PlanItemCategory } from "@/types";
 import { MONTHS } from "@/lib/finance-filter";
 
 export const PLAN_CATEGORY_META: Record<
@@ -79,8 +79,8 @@ export function computeDistribution(income: number, items: MonthlyPlanItem[]): D
   };
 }
 
-export interface GoalProjection {
-  goal: Goal;
+/** Time-to-target math shared by goals (projection list) and dreams (cards). */
+export interface AmountProjection {
   remaining: number;
   months: number | null; // null = no positive savings rate
   dateLabel: string | null;
@@ -91,12 +91,12 @@ export interface GoalProjection {
   monthsSavedWith300: number | null;
 }
 
-export function projectGoal(goal: Goal, avgSavings: number): GoalProjection {
-  const remaining = Math.max(0, goal.targetAmount - goal.currentAmount);
-  const pct = goal.targetAmount > 0 ? Math.min(100, Math.round((goal.currentAmount / goal.targetAmount) * 100)) : 0;
+export function projectAmounts(target: number, current: number, avgSavings: number): AmountProjection {
+  const remaining = Math.max(0, target - current);
+  const pct = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : 0;
   if (avgSavings <= 0 || remaining === 0) {
     return {
-      goal, remaining, pct,
+      remaining, pct,
       months: remaining === 0 ? 0 : null,
       dateLabel: remaining === 0 ? "Atingida" : null,
       extraFor3MonthsEarlier: null,
@@ -107,12 +107,31 @@ export function projectGoal(goal: Goal, avgSavings: number): GoalProjection {
   const extraFor3MonthsEarlier = months > 3 ? Math.ceil(remaining / (months - 3) - avgSavings) : null;
   const monthsWith300 = Math.ceil(remaining / (avgSavings + 300));
   return {
-    goal, remaining, pct, months,
+    remaining, pct, months,
     dateLabel: monthsFromNowLabel(months),
     extraFor3MonthsEarlier,
     monthsSavedWith300: months - monthsWith300 > 0 ? months - monthsWith300 : null,
   };
 }
+
+export interface GoalProjection extends AmountProjection {
+  goal: Goal;
+}
+
+export function projectGoal(goal: Goal, avgSavings: number): GoalProjection {
+  return { goal, ...projectAmounts(goal.targetAmount, goal.currentAmount, avgSavings) };
+}
+
+/* ---- Dreams ------------------------------------------------------------------ */
+
+export const DREAM_COLORS: Record<DreamColor, { label: string; value: string }> = {
+  roxo: { label: "Roxo", value: "var(--brand-purple)" },
+  cyan: { label: "Cyan", value: "var(--brand-cyan-dark)" },
+  verde: { label: "Verde", value: "var(--success)" },
+  dourado: { label: "Dourado", value: "#F59E0B" },
+};
+
+export const DREAM_EMOJIS = ["🍁", "🛡️", "🏠", "💍", "✈️", "🚗", "🛋️", "🎓", "💻", "👶", "🐶", "🏖️", "🎸", "📈", "💰", "⭐"];
 
 /** Emoji for a dream card, from the goal's title/category. */
 export function dreamEmoji(goal: Goal): string {

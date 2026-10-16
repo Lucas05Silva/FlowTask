@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
 import { dreamEmoji, monthName, type GoalProjection } from "@/lib/organizacao";
@@ -10,10 +10,9 @@ interface FutureSectionProps {
   avgMonthlySavings: number;
   projections: GoalProjection[];
   history: { month: number; year: number; total: number }[];
+  /** Dreams block (DreamsSection), rendered under the projection + chart. */
+  children?: ReactNode;
 }
-
-const compact = (v: number) =>
-  v >= 1000 ? `${(v / 1000).toLocaleString("pt-BR", { maximumFractionDigits: v >= 10000 ? 0 : 1 })}k` : `${Math.round(v)}`;
 
 /* ---- 3.1 Projeção ----------------------------------------------------------- */
 function ProjectionCard({ avg, projections }: { avg: number; projections: GoalProjection[] }) {
@@ -62,67 +61,6 @@ function ProjectionCard({ avg, projections }: { avg: number; projections: GoalPr
         </p>
       )}
     </Card>
-  );
-}
-
-/* ---- 3.2 Sonhos com prazo --------------------------------------------------- */
-function DreamCard({ p, index }: { p: GoalProjection; index: number }) {
-  const tone =
-    p.pct >= 75 ? { bar: "var(--success)", text: "text-success", line: "quase lá! 🎉" }
-    : p.pct >= 40 ? { bar: "var(--brand-purple)", text: "text-brand", line: "na metade do caminho 💜" }
-    : { bar: "var(--text-secondary)", text: "text-muted", line: "cada depósito conta 🌱" };
-  const isCanada = dreamEmoji(p.goal) === "🍁";
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.06 }}
-      className="group relative flex flex-col overflow-hidden rounded-card border border-line bg-surface p-4 shadow-soft transition-shadow hover:shadow-pop"
-    >
-      <span className="text-3xl" aria-hidden>{dreamEmoji(p.goal)}</span>
-      <h4 className="mt-2 truncate text-sm font-extrabold uppercase tracking-wide text-content">{p.goal.title}</h4>
-      <p className="text-[11px] text-muted">
-        {p.remaining === 0 ? "Conquistado! 🏆" : isCanada ? "Canadá está chegando 🍁" : tone.line}
-      </p>
-
-      <div className="mt-3">
-        {p.remaining === 0 ? (
-          <p className="text-xl font-bold text-success">Atingida</p>
-        ) : p.months !== null ? (
-          <>
-            <p className="text-xl font-bold text-content">
-              {p.months} {p.months === 1 ? "mês" : "meses"}
-            </p>
-            <p className="text-xs text-muted">{p.dateLabel}</p>
-          </>
-        ) : (
-          <p className="text-sm font-semibold text-muted">Prazo a definir</p>
-        )}
-      </div>
-
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-panel">
-        <motion.div
-          initial={{ width: 0 }}
-          animate={{ width: `${p.pct}%` }}
-          transition={{ duration: 0.8, delay: 0.15 + index * 0.06, ease: "easeOut" }}
-          className="h-full rounded-full"
-          style={{ backgroundColor: tone.bar }}
-        />
-      </div>
-      <p className="mt-1.5 flex justify-between text-[11px] text-muted">
-        <span>
-          {formatBRL(p.goal.currentAmount)} / {compact(p.goal.targetAmount)}
-        </span>
-        <span className={cn("font-bold", tone.text)}>{p.pct}%</span>
-      </p>
-
-      {p.monthsSavedWith300 && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 translate-y-full bg-brand px-4 py-2.5 text-[11px] font-medium text-white transition-transform duration-200 group-hover:translate-y-0">
-          Poupar +R$ 300/mês acelera em {p.monthsSavedWith300} {p.monthsSavedWith300 === 1 ? "mês" : "meses"}
-        </div>
-      )}
-    </motion.div>
   );
 }
 
@@ -203,7 +141,7 @@ function PatrimonyChart({ history }: { history: FutureSectionProps["history"] })
   );
 }
 
-export function FutureSection({ avgMonthlySavings, projections, history }: FutureSectionProps) {
+export function FutureSection({ avgMonthlySavings, projections, history, children }: FutureSectionProps) {
   return (
     <section aria-labelledby="org-future" className="space-y-4">
       <h2 id="org-future" className="text-xs font-bold uppercase tracking-widest text-muted">
@@ -215,16 +153,7 @@ export function FutureSection({ avgMonthlySavings, projections, history }: Futur
         <PatrimonyChart history={history} />
       </div>
 
-      {projections.length > 0 && (
-        <div>
-          <h3 className="mb-3 text-sm font-semibold text-content">✨ Sonhos com prazo</h3>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
-            {projections.map((p, i) => (
-              <DreamCard key={p.goal.id} p={p} index={i} />
-            ))}
-          </div>
-        </div>
-      )}
+      {children}
     </section>
   );
 }

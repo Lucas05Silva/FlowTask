@@ -492,6 +492,24 @@ export interface FinancialIdea {
   createdAt: string;
 }
 
+export type DreamColor = "roxo" | "cyan" | "verde" | "dourado";
+
+/** A personal dream card (Organização → Futuro). Per-user, RLS-scoped. */
+export interface Dream {
+  id: ID;
+  userId: ID;
+  name: string;
+  emoji: string;
+  targetAmount: number;
+  currentAmount: number;
+  /** When set, target/current are read live from this financial goal. */
+  linkedGoalId: string | null;
+  color: DreamColor;
+  notes?: string;
+  displayOrder: number;
+  createdAt: string;
+}
+
 /* --- Minha Renda (Fase 15B) ----------------------------------------------- */
 
 export type IncomeSourceType = "fixo" | "variavel" | "beneficio";
@@ -591,6 +609,7 @@ export interface FlowTaskData {
   monthlyPlans: MonthlyPlan[];
   monthlyPlanItems: MonthlyPlanItem[];
   financialIdeas: FinancialIdea[];
+  dreams: Dream[];
   weddingDate: string | null;
   weddingVenueName?: string | null;
   weddingVenueAddress?: string | null;
