@@ -86,9 +86,6 @@ export function GoalMural({ completedGoals }: GoalMuralProps) {
                   <Award className="size-5" />
                 </span>
 
-                <span className="text-[10px] font-extrabold uppercase bg-amber-500/10 text-amber-600 px-2 py-0.5 rounded border border-amber-500/20 tracking-wider">
-                  +{g.xpReward} XP
-                </span>
               </div>
 
               <div className="mt-3">

@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NAV_ITEMS } from "@/lib/nav";
 import { Logo } from "@/components/Logo";
-import { Ranking } from "@/components/gamification/Ranking";
 import { cn } from "@/lib/utils";
 
 /**
@@ -61,9 +60,6 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="hidden border-t border-line p-3 lg:block">
-        <Ranking variant="sidebar" />
-      </div>
     </aside>
   );
 }

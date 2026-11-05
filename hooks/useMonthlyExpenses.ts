@@ -5,13 +5,10 @@ import type {
   MonthlyExpense,
   MonthlyExpenseCategory,
   ExpenseRecurrence,
-  Achievement,
-  FlowTaskData,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid } from "@/lib/utils";
 import { LUCAS_ID } from "@/hooks/useIncomeProfile";
 
@@ -95,55 +92,11 @@ export function useMonthlyExpenses() {
     [recurringExpenses],
   );
 
-  /* ---- gamification helper ------------------------------------------------- */
-  const rewardUser = useCallback(
-    (d: FlowTaskData, xpReward: number, manualAchievementIds: string[] = []) => {
-      if (!userId) return { nextData: d, result: null as CelebrationResult | null };
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-
-      const levelBefore = levelFromXp(me.xp).level;
-      let totalXpGained = xpReward;
-      me.xp += xpReward;
-
-      let userAchievements = d.userAchievements;
-      const unlocked: Achievement[] = [];
-      for (const achId of manualAchievementIds) {
-        if (userAchievements.some((ua) => ua.userId === userId && ua.achievementId === achId)) continue;
-        const ach = d.achievements.find((a) => a.id === achId);
-        if (!ach) continue;
-        userAchievements = [
-          ...userAchievements,
-          { id: uid("ua"), userId, achievementId: achId, unlockedAt: new Date().toISOString() },
-        ];
-        me.xp += ach.xpReward;
-        totalXpGained += ach.xpReward;
-        unlocked.push(ach);
-      }
-
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-      return {
-        nextData: { ...d, users, userAchievements },
-        result: {
-          xpGained: totalXpGained,
-          leveledUp: after.level > levelBefore,
-          newLevel: after.level,
-          newTitle: after.title,
-          achievements: unlocked,
-          streakCount: me.streakCount,
-        } as CelebrationResult,
-      };
-    },
-    [userId],
-  );
 
   /* ---- CRUD ---------------------------------------------------------------- */
   const addExpense = useCallback(
-    (form: ExpenseFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (form: ExpenseFormData) => {
+      if (!userId) return;
       updateData((d) => {
         const nowIso = new Date().toISOString();
         const parceled = form.recurrence === "parcelado";
@@ -162,16 +115,10 @@ export function useMonthlyExpenses() {
           createdAt: nowIso,
           updatedAt: nowIso,
         };
-        const next = { ...d, monthlyExpenses: [...d.monthlyExpenses, expense] };
-        const activeCount = next.monthlyExpenses.filter((e) => e.userId === userId && e.isActive).length;
-        const manual = activeCount >= 5 ? ["ach_organized"] : [];
-        const { nextData, result } = rewardUser(next, XP.expenseAdd, manual);
-        celebration = result;
-        return nextData;
+        return { ...d, monthlyExpenses: [...d.monthlyExpenses, expense] };
       });
-      return celebration;
     },
-    [userId, rewardUser],
+    [userId],
   );
 
   const updateExpense = useCallback((id: string, patch: Partial<MonthlyExpense>) => {
@@ -190,11 +137,10 @@ export function useMonthlyExpenses() {
     }));
   }, []);
 
-  /** Advance a parcel; if it clears the debt, mark inactive + reward (+30 XP, Dívida zero). */
+  /** Advance a parcel; if it clears the debt, mark it inactive and return its name. */
   const advanceInstallment = useCallback(
-    (id: string): { celebration: CelebrationResult | null; quitadoName: string | null } => {
-      if (!userId) return { celebration: null, quitadoName: null };
-      let celebration: CelebrationResult | null = null;
+    (id: string): { quitadoName: string | null } => {
+      if (!userId) return { quitadoName: null };
       let quitadoName: string | null = null;
 
       updateData((d) => {
@@ -209,23 +155,16 @@ export function useMonthlyExpenses() {
           isActive: cleared ? false : exp.isActive,
           updatedAt: new Date().toISOString(),
         };
-        const next = {
+        if (cleared) quitadoName = exp.name;
+        return {
           ...d,
           monthlyExpenses: d.monthlyExpenses.map((e) => (e.id === id ? updated : e)),
         };
-
-        if (cleared) {
-          quitadoName = exp.name;
-          const { nextData, result } = rewardUser(next, XP.installmentPaid, ["ach_debt_zero"]);
-          celebration = result;
-          return nextData;
-        }
-        return next;
       });
 
-      return { celebration, quitadoName };
+      return { quitadoName };
     },
-    [userId, rewardUser],
+    [userId],
   );
 
   /* ---- seed (Lucas, once) -------------------------------------------------- */

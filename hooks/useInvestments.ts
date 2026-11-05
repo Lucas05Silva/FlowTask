@@ -10,14 +10,12 @@ import type {
   RiskLevel,
   Contributor,
   FinanceEntry,
-  Achievement,
   Goal,
   FlowTaskData,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
 import { KNOWN_USERS } from "@/lib/data/initialState";
 import {
@@ -32,51 +30,6 @@ const LUCAS_ID = KNOWN_USERS[0].id;
 /** Canonical owner id for shared (couple-level) rows like patrimony snapshots. */
 const SHARED_ID = LUCAS_ID;
 const monthKey = (iso: string) => iso.slice(0, 7); // YYYY-MM
-
-/** Achievement ids the user newly qualifies for after a mutation (pure). */
-function extraAchievementsFor(
-  d: FlowTaskData,
-  userId: string,
-  monthlyExpense: number,
-): string[] {
-  const have = new Set(
-    d.userAchievements.filter((ua) => ua.userId === userId).map((ua) => ua.achievementId),
-  );
-  // Shared portfolio — milestones consider ALL positions, not just this user's.
-  const all = d.investments;
-  const out: string[] = [];
-
-  // Patrimônio milestones — one-time reward each (R$ 10k / 50k / 100k)
-  const totalCurrent = all.reduce((s, i) => s + i.currentValue, 0);
-  if (totalCurrent >= 10000 && !have.has("ach_patrimony_10k")) out.push("ach_patrimony_10k");
-  if (totalCurrent >= 50000 && !have.has("ach_patrimony_50k")) out.push("ach_patrimony_50k");
-  if (totalCurrent >= 100000 && !have.has("ach_patrimony_100k")) out.push("ach_patrimony_100k");
-
-  // Reserva Completa — emergency fund ≥ target (4× monthly expenses, when known)
-  const reserveTarget = monthlyExpense * 4;
-  if (reserveTarget > 0) {
-    const reserve = all.filter((i) => i.isEmergencyFund).reduce((s, i) => s + i.currentValue, 0);
-    if (reserve >= reserveTarget && !have.has("ach_reserve_complete")) out.push("ach_reserve_complete");
-  }
-
-  // Consistência — contributions in 3 consecutive months (incl. current)
-  if (!have.has("ach_consistency")) {
-    const months = new Set(
-      d.investmentContributions.map((c) => monthKey(c.date)),
-    );
-    const now = new Date();
-    let streak = 0;
-    for (let i = 0; i < 12; i++) {
-      const dt = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
-      if (months.has(key)) streak++;
-      else if (streak > 0) break;
-    }
-    if (streak >= 3) out.push("ach_consistency");
-  }
-
-  return out;
-}
 
 /**
  * Recompute a linked goal's progress from the SUM of every investment tied to
@@ -175,58 +128,6 @@ export function useInvestments() {
     });
   }, [data.investments, contributionsByInvestment]);
 
-  /* ---- gamification helper (mirror of useFinance.rewardUser) --------------- */
-  const rewardUser = useCallback(
-    (
-      d: FlowTaskData,
-      xpReward: number,
-      manualAchievementIds: string[] = [],
-    ): { nextData: FlowTaskData; result: CelebrationResult | null } => {
-      if (!userId) return { nextData: d, result: null };
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-
-      const levelBefore = levelFromXp(me.xp).level;
-      let totalXpGained = xpReward;
-      me.xp += xpReward;
-
-      let userAchievements = d.userAchievements;
-      const unlocked: Achievement[] = [];
-
-      for (const achId of manualAchievementIds) {
-        const alreadyHas = userAchievements.some(
-          (ua) => ua.userId === userId && ua.achievementId === achId,
-        );
-        if (alreadyHas) continue;
-        const ach = d.achievements.find((a) => a.id === achId);
-        if (!ach) continue;
-        userAchievements = [
-          ...userAchievements,
-          { id: uid("ua"), userId, achievementId: achId, unlockedAt: new Date().toISOString() },
-        ];
-        me.xp += ach.xpReward;
-        totalXpGained += ach.xpReward;
-        unlocked.push(ach);
-      }
-
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-
-      return {
-        nextData: { ...d, users, userAchievements },
-        result: {
-          xpGained: totalXpGained,
-          leveledUp: after.level > levelBefore,
-          newLevel: after.level,
-          newTitle: after.title,
-          achievements: unlocked,
-          streakCount: me.streakCount,
-        },
-      };
-    },
-    [userId],
-  );
 
   /* ---- helpers ------------------------------------------------------------- */
 
@@ -342,9 +243,8 @@ export function useInvestments() {
   /* ---- CRUD: investments --------------------------------------------------- */
 
   const createInvestment = useCallback(
-    (form: InvestmentFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (form: InvestmentFormData) => {
+      if (!userId) return;
 
       updateData((d) => {
         const nowIso = new Date().toISOString();
@@ -402,7 +302,7 @@ export function useInvestments() {
           currentValue,
         };
 
-        let next: FlowTaskData = {
+        const next: FlowTaskData = {
           ...d,
           investments: [...d.investments, investment],
           investmentContributions: firstContribution
@@ -410,22 +310,10 @@ export function useInvestments() {
             : d.investmentContributions,
         };
 
-        const { d: withGoal, completed } = recomputeLinkedGoal(next, investment.goalId);
-        next = withGoal;
-
-        const extra = extraAchievementsFor(next, userId, monthlyExpenseEstimate);
-        const { nextData, result } = rewardUser(next, XP.investmentContribution, [
-          "ach_first_investment",
-          ...extra,
-        ]);
-        if (result && completed) result.completedGoal = completed;
-        celebration = result;
-        return nextData;
+        return recomputeLinkedGoal(next, investment.goalId).d;
       });
-
-      return celebration;
     },
-    [userId, rewardUser, monthlyExpenseEstimate],
+    [userId],
   );
 
   const updateInvestment = useCallback((id: string, patch: Partial<Investment>) => {
@@ -454,9 +342,8 @@ export function useInvestments() {
   /* ---- contributions ------------------------------------------------------- */
 
   const addContribution = useCallback(
-    (investmentId: string, form: ContributionFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (investmentId: string, form: ContributionFormData) => {
+      if (!userId) return;
 
       updateData((d) => {
         const inv = d.investments.find((i) => i.id === investmentId);
@@ -517,19 +404,10 @@ export function useInvestments() {
           next = { ...next, finances: [...next.finances, expense] };
         }
 
-        const { d: withGoal, completed } = recomputeLinkedGoal(next, updatedInvestment.goalId);
-        next = withGoal;
-
-        const extra = extraAchievementsFor(next, userId, monthlyExpenseEstimate);
-        const { nextData, result } = rewardUser(next, XP.investmentContribution, extra);
-        if (result && completed) result.completedGoal = completed;
-        celebration = result;
-        return nextData;
+        return recomputeLinkedGoal(next, updatedInvestment.goalId).d;
       });
-
-      return celebration;
     },
-    [userId, rewardUser, monthlyExpenseEstimate],
+    [userId],
   );
 
   const deleteContribution = useCallback((id: string) => {

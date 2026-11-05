@@ -4,7 +4,7 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useState } from "react";
-import { Star, Trash2, Repeat } from "lucide-react";
+import { Trash2, Repeat } from "lucide-react";
 import type { Assignee, Category, Goal, Priority, RecurrenceRule, Task, GoalType } from "@/types";
 import { useData } from "@/hooks/useData";
 import { Modal } from "@/components/ui/Modal";
@@ -13,7 +13,6 @@ import { Input, Label, Textarea, Select } from "@/components/ui/Input";
 import { SubtaskList } from "./SubtaskList";
 import { TaskPromptsSection } from "./prompts/TaskPromptsSection";
 import { CATEGORY_META, PRIORITY_META, ASSIGNEE_META } from "@/lib/constants";
-import { taskXp, type CelebrationResult } from "@/lib/gamification";
 import type { TaskFormData } from "@/hooks/useTasks";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +24,7 @@ interface TaskModalProps {
   onClose: () => void;
   onCreate: (form: TaskFormData) => void;
   onUpdate: (id: string, form: TaskFormData) => void;
-  onComplete: (id: string) => CelebrationResult | null;
+  onComplete: (id: string) => void;
   onDelete: (id: string) => void;
   initialTab?: TaskModalTab;
   defaultGoalId?: string | null;
@@ -117,10 +116,7 @@ export function TaskModal({ open, task, onClose, onCreate, onUpdate, onComplete,
       onClose={onClose}
       title={isEdit ? "Editar tarefa" : "Nova tarefa"}
       footer={
-        <div className="flex items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-brand">
-            <Star className="size-4" /> +{taskXp(form.priority)} XP
-          </span>
+        <div className="flex items-center justify-end gap-3">
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>Cancelar</Button>
             <Button onClick={handleSave}>Salvar</Button>

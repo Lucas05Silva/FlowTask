@@ -4,8 +4,6 @@ import { useMemo, useState } from "react";
 import { Briefcase, Plus } from "lucide-react";
 import type { Project } from "@/types";
 import { useProjects, type ProjectFormData } from "@/hooks/useProjects";
-import { useGamification } from "@/components/providers/GamificationProvider";
-import { useToast } from "@/components/providers/ToastProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,8 +14,6 @@ import { ProjectStats } from "./ProjectStats";
 
 export function ProjectsPage() {
   const { projects, createProject, updateProject, deleteProject, toggleStep, setStatus } = useProjects();
-  const { celebrate } = useGamification();
-  const { toast } = useToast();
 
   const [filters, setFilters] = useState<ProjectFilterState>(DEFAULT_PROJECT_FILTERS);
   const [modalOpen, setModalOpen] = useState(false);
@@ -61,20 +57,16 @@ export function ProjectsPage() {
       completedAt: form.status === "feito" && project.status === "feito" ? project.completedAt : null,
     });
     if (form.status === "feito" && project.status !== "feito") {
-      const result = setStatus(id, "feito");
-      if (result) celebrate(result, { big: true });
+      setStatus(id, "feito");
     }
   }
 
   function completeProject(project: Project) {
-    const result = setStatus(project.id, "feito");
-    if (result) celebrate(result, { big: true });
+    setStatus(project.id, "feito");
   }
 
   function handleToggleStep(project: Project, stepId: string) {
     const out = toggleStep(project.id, stepId);
-    if (out.result) celebrate(out.result);
-    if (out.result) toast({ variant: "success", title: "Etapa concluida", description: "+30 XP creditados." });
     if (out.allDone) {
       const shouldComplete = window.confirm("Todas as etapas foram concluidas. Marcar projeto como Feito?");
       if (shouldComplete) completeProject(project);

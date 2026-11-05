@@ -6,7 +6,6 @@ import { useCanada } from "@/hooks/useCanada";
 import { useGoals } from "@/hooks/useGoals";
 import { useInvestments } from "@/hooks/useInvestments";
 import { useData } from "@/hooks/useData";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { CANADA_GOAL_LINKED_MODULE, CANADA_GOAL_DEFAULT_TARGET, RESERVE_ESTIMATE_TOTAL } from "@/lib/canada-data";
 import { pct, cn } from "@/lib/utils";
 import { CanadaStatusPanel } from "./CanadaStatusPanel";
@@ -30,7 +29,6 @@ const TABS: { key: TabKey; label: string; icon: typeof HelpCircle }[] = [
 
 export function CanadaPage() {
   const [activeTab, setActiveTab] = useState<TabKey>("decisoes");
-  const { celebrate } = useGamification();
   const data = useData();
 
   const canada = useCanada();
@@ -88,7 +86,6 @@ export function CanadaPage() {
       deadline: null,
       category: "canada",
       linkedModule: CANADA_GOAL_LINKED_MODULE,
-      xpReward: 150,
       contributionType: "value",
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -122,28 +119,23 @@ export function CanadaPage() {
 
   function handleUpdateGoalValue(value: number) {
     if (!canadaGoal) return;
-    const res = updateProgress(canadaGoal.id, value);
-    if (res) celebrate(res, { big: !!res.completedGoal });
+    updateProgress(canadaGoal.id, value);
   }
 
   function handleAnswer(id: string, answer: string) {
-    const res = canada.answerDecision(id, answer);
-    if (res) celebrate(res);
+    canada.answerDecision(id, answer);
   }
 
   function handleSetDocumentStatus(id: string, status: Parameters<typeof canada.setDocumentStatus>[1]) {
-    const res = canada.setDocumentStatus(id, status);
-    if (res) celebrate(res);
+    canada.setDocumentStatus(id, status);
   }
 
   function handleToggleChecklist(id: string) {
-    const res = canada.toggleChecklistItem(id);
-    if (res) celebrate(res);
+    canada.toggleChecklistItem(id);
   }
 
   function handleChooseCity(id: string) {
-    const res = canada.chooseCity(id);
-    if (res) celebrate(res, { big: true });
+    canada.chooseCity(id);
   }
 
   const progress = canada.getProgress();

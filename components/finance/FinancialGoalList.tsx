@@ -16,7 +16,6 @@ interface FinancialGoalListProps {
   onEditClick: (goal: Goal) => void;
   onDeposit: (id: string, amount: number) => any;
   onDeleteClick: (id: string) => void;
-  onCelebrate: (result: any) => void;
 }
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -34,7 +33,6 @@ export function FinancialGoalList({
   onEditClick,
   onDeposit,
   onDeleteClick,
-  onCelebrate,
 }: FinancialGoalListProps) {
   const activeGoals = useMemo(() => goals.filter((g) => g.status !== "concluida"), [goals]);
   const completedGoals = useMemo(() => goals.filter((g) => g.status === "concluida"), [goals]);
@@ -52,10 +50,7 @@ export function FinancialGoalList({
       alert("Por favor, insira um valor válido maior que zero.");
       return;
     }
-    const res = onDeposit(goal.id, value);
-    if (res) {
-      onCelebrate(res);
-    }
+    onDeposit(goal.id, value);
   }
 
   function getSavingAdvice(goal: Goal): string | null {

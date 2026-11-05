@@ -6,7 +6,6 @@ import {
   Wallet,
   TrendingUp,
   Target,
-  HeartHandshake,
   NotebookPen,
   MapPin,
   ClipboardList,
@@ -32,7 +31,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: "/organizacao", label: "Organização", icon: ClipboardList, badge: "Pessoal" },
   { href: "/metas", label: "Metas", icon: Target },
   { href: "/notas", label: "Notas", icon: NotebookPen },
-  { href: "/casamento", label: "Casamento", icon: HeartHandshake },
 ];
 
 export const PRIMARY_MOBILE_ITEMS = NAV_ITEMS.filter((i) => i.primaryMobile);

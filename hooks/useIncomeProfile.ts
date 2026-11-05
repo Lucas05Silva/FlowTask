@@ -5,13 +5,10 @@ import type {
   IncomeProfile,
   IncomeSource,
   IncomeHistoryEntry,
-  Achievement,
-  FlowTaskData,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
 import { KNOWN_USERS } from "@/lib/data/initialState";
 
@@ -90,53 +87,6 @@ export function useIncomeProfile() {
     [getFixedIncome, monthlyExpenses, getTotalInvestment],
   );
 
-  /* ---- gamification helper (mirror of useFinance.rewardUser) -------------- */
-  const rewardUser = useCallback(
-    (
-      d: FlowTaskData,
-      xpReward: number,
-      manualAchievementIds: string[] = [],
-    ): { nextData: FlowTaskData; result: CelebrationResult | null } => {
-      if (!userId) return { nextData: d, result: null };
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-
-      const levelBefore = levelFromXp(me.xp).level;
-      let totalXpGained = xpReward;
-      me.xp += xpReward;
-
-      let userAchievements = d.userAchievements;
-      const unlocked: Achievement[] = [];
-      for (const achId of manualAchievementIds) {
-        if (userAchievements.some((ua) => ua.userId === userId && ua.achievementId === achId)) continue;
-        const ach = d.achievements.find((a) => a.id === achId);
-        if (!ach) continue;
-        userAchievements = [
-          ...userAchievements,
-          { id: uid("ua"), userId, achievementId: achId, unlockedAt: new Date().toISOString() },
-        ];
-        me.xp += ach.xpReward;
-        totalXpGained += ach.xpReward;
-        unlocked.push(ach);
-      }
-
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-      return {
-        nextData: { ...d, users, userAchievements },
-        result: {
-          xpGained: totalXpGained,
-          leveledUp: after.level > levelBefore,
-          newLevel: after.level,
-          newTitle: after.title,
-          achievements: unlocked,
-          streakCount: me.streakCount,
-        },
-      };
-    },
-    [userId],
-  );
 
   /* ---- seed (Lucas, once) -------------------------------------------------- */
   const seedIfEmpty = useCallback(() => {
@@ -174,11 +124,10 @@ export function useIncomeProfile() {
     });
   }, [userId]);
 
-  /* ---- save (upsert profile + history entry + gamification) --------------- */
+  /* ---- save (upsert profile + history entry) ------------------------------ */
   const saveProfile = useCallback(
-    (form: IncomeProfileFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (form: IncomeProfileFormData) => {
+      if (!userId) return;
 
       updateData((d) => {
         const nowIso = new Date().toISOString();
@@ -215,34 +164,14 @@ export function useIncomeProfile() {
           createdAt: nowIso,
         };
 
-        let next: FlowTaskData = {
+        return {
           ...d,
           incomeProfiles: [...others, nextProfile],
           incomeHistory: [...historyWithoutMonth, newEntry],
         };
-
-        // "Plano traçado": all sources labelled + an investment goal defined.
-        const planReady =
-          form.sources.length > 0 &&
-          form.sources.every((s) => s.label.trim().length > 0) &&
-          form.investmentGoalPct > 0;
-        const manualAch = planReady ? ["ach_income_plan"] : [];
-
-        // +25 XP the first time the profile is edited by the user.
-        const editedFlag = `flowtask_income_edited_${userId}`;
-        const firstEdit = typeof window !== "undefined" && !window.localStorage.getItem(editedFlag);
-        if (firstEdit) window.localStorage.setItem(editedFlag, "1");
-        const baseXp = firstEdit ? XP.incomeProfileUpdate : 0;
-
-        const { nextData, result } = rewardUser(next, baseXp, manualAch);
-        next = nextData;
-        celebration = result;
-        return next;
       });
-
-      return celebration;
     },
-    [userId, rewardUser],
+    [userId],
   );
 
   return {

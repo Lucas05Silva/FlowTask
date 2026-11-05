@@ -1,5 +1,5 @@
 import type { FlowTaskData } from "@/types";
-import { emptyState, ACHIEVEMENTS } from "./initialState";
+import { emptyState } from "./initialState";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase/client";
 import type { RealtimeChannel } from "@supabase/supabase-js";
 
@@ -18,8 +18,7 @@ import type { RealtimeChannel } from "@supabase/supabase-js";
 
 type CollKey =
   | "users" | "tasks" | "projects" | "finances" | "debts" | "goals"
-  | "weddingTasks" | "weddingBudget" | "weddingVendors"
-  | "userAchievements" | "taskPrompts" | "notes"
+  | "taskPrompts" | "notes"
   | "investments" | "investmentContributions" | "patrimonySnapshots"
   | "incomeProfiles" | "incomeHistory" | "monthlyExpenses"
   | "canadaDecisions" | "canadaDocuments" | "canadaChecklist" | "canadaCities" | "canadaNotes"
@@ -33,10 +32,6 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "finances", table: "finances_entries" },
   { key: "debts", table: "debts" },
   { key: "goals", table: "goals" },
-  { key: "weddingTasks", table: "wedding_tasks" },
-  { key: "weddingBudget", table: "wedding_budget" },
-  { key: "weddingVendors", table: "wedding_vendors" },
-  { key: "userAchievements", table: "user_achievements" },
   { key: "taskPrompts", table: "task_prompts" },
   { key: "notes", table: "notes" },
   { key: "investments", table: "investments" },
@@ -56,7 +51,6 @@ const COLLECTIONS: { key: CollKey; table: string; noDelete?: boolean }[] = [
   { key: "financialIdeas", table: "financial_ideas" },
   { key: "dreams", table: "dreams" },
 ];
-const WEDDING_CONFIG_TABLE = "wedding_config";
 
 /* --- key case mapping (top-level only; jsonb values kept as-is) ------------- */
 const camelToSnake = (k: string) => k.replace(/[A-Z]/g, (m) => `_${m.toLowerCase()}`);
@@ -157,24 +151,6 @@ function enqueueDiff(prev: FlowTaskData, next: FlowTaskData): void {
     const b = (next[c.key] as unknown as Entity[]) ?? [];
     if (a !== b) diffCollection(c.table, a, b, !!c.noDelete);
   }
-  // wedding_config singleton
-  if (
-    prev.weddingDate !== next.weddingDate ||
-    prev.weddingVenueName !== next.weddingVenueName ||
-    prev.weddingVenueAddress !== next.weddingVenueAddress
-  ) {
-    queue.push({
-      kind: "upsert",
-      table: WEDDING_CONFIG_TABLE,
-      row: {
-        id: "shared",
-        wedding_date: next.weddingDate,
-        wedding_venue_name: next.weddingVenueName ?? null,
-        wedding_venue_address: next.weddingVenueAddress ?? null,
-      },
-    });
-    recentLocalWrites.set("shared", Date.now() + 2500);
-  }
   scheduleFlush();
 }
 
@@ -260,19 +236,8 @@ async function fetchAll(): Promise<FlowTaskData> {
     }
   });
 
-  next.achievements = ACHIEVEMENTS;
   if (!next.users || next.users.length === 0) next.users = emptyState().users;
 
-  try {
-    const cfg = await sb.from(WEDDING_CONFIG_TABLE).select("*").eq("id", "shared").maybeSingle();
-    if (cfg && cfg.data) {
-      next.weddingDate = (cfg.data as Row).wedding_date as string | null;
-      next.weddingVenueName = (cfg.data as Row).wedding_venue_name as string | null;
-      next.weddingVenueAddress = (cfg.data as Row).wedding_venue_address as string | null;
-    }
-  } catch (e) {
-    console.warn("[store] Falha ao carregar wedding_config:", e);
-  }
   return next;
 }
 
@@ -293,36 +258,6 @@ function subscribeRealtime(): void {
       if (suppressUntil && Date.now() < suppressUntil) {
         return; // Ignore our own echo
       }
-    }
-
-    if (table === WEDDING_CONFIG_TABLE) {
-      if (eventType === "DELETE") {
-        cache = {
-          ...cache,
-          weddingDate: null,
-          weddingVenueName: null,
-          weddingVenueAddress: null,
-        };
-      } else {
-        const nextWeddingDate = newRow.wedding_date ?? null;
-        const nextWeddingVenueName = newRow.wedding_venue_name ?? null;
-        const nextWeddingVenueAddress = newRow.wedding_venue_address ?? null;
-        if (
-          cache.weddingDate === nextWeddingDate &&
-          cache.weddingVenueName === nextWeddingVenueName &&
-          cache.weddingVenueAddress === nextWeddingVenueAddress
-        ) {
-          return;
-        }
-        cache = {
-          ...cache,
-          weddingDate: nextWeddingDate,
-          weddingVenueName: nextWeddingVenueName,
-          weddingVenueAddress: nextWeddingVenueAddress,
-        };
-      }
-      emit();
-      return;
     }
 
     const coll = COLLECTIONS.find((c) => c.table === table);
@@ -382,7 +317,7 @@ function subscribeRealtime(): void {
 
   // Subscribe per table (reliable delivery across supabase-js versions).
   let ch = sb.channel("flowtask_sync");
-  const tables = [...COLLECTIONS.map((c) => c.table), WEDDING_CONFIG_TABLE];
+  const tables = COLLECTIONS.map((c) => c.table);
   for (const table of tables) {
     ch = ch.on("postgres_changes", { event: "*", schema: "public", table }, onRemoteChange);
   }
@@ -448,7 +383,6 @@ export async function resetData(): Promise<void> {
       if (c.key === "users") continue;
       await sb.from(c.table).delete().neq("id", "___none___");
     }
-    await sb.from(WEDDING_CONFIG_TABLE).delete().neq("id", "___none___");
     // Zero the user profiles.
     const fresh = emptyState();
     await sb.from("users").upsert(fresh.users.map((u) => rowFromEntity(u as unknown as Entity)));

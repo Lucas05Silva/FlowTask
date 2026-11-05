@@ -5,10 +5,8 @@ import { ChevronLeft, ChevronRight, Lock, ClipboardList } from "lucide-react";
 import type { MonthlyPlanItem } from "@/types";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useToast } from "@/components/providers/ToastProvider";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { useOrganizacao } from "@/hooks/useOrganizacao";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { fireBigConfetti } from "@/lib/confetti";
 import { compareToCurrentMonth, monthName, shiftMonth } from "@/lib/organizacao";
 import { cn } from "@/lib/utils";
 import { EmptyPlanState } from "./EmptyPlanState";
@@ -21,7 +19,6 @@ import { ReflectionSection } from "./ReflectionSection";
 export function OrganizacaoPage() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const { celebrate } = useGamification();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [year, setYear] = useState(now.getFullYear());
@@ -53,12 +50,10 @@ export function OrganizacaoPage() {
     const res = org.markPaid(item);
     if (!res) return;
     toast({ variant: "success", title: res.message });
-    if (res.celebration) celebrate(res.celebration, { big: !!res.celebration.completedGoal });
     // Was this the last open item of the month?
     const othersDone = org.items.filter((i) => i.id !== item.id).every((i) => org.itemStatus(i).done);
     if (org.items.length > 1 && othersDone) {
-      void fireBigConfetti();
-      toast({ variant: "achievement", title: "Mês organizado! Você mandou bem 🎉" });
+      toast({ variant: "success", title: "Mês organizado! Você mandou bem 🎉" });
     }
   }
 

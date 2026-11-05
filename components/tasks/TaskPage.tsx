@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Plus, ClipboardList } from "lucide-react";
 import type { Task } from "@/types";
 import { useTasks, type TaskFormData } from "@/hooks/useTasks";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
@@ -16,7 +15,6 @@ import { TaskModal, type TaskModalTab } from "./TaskModal";
 
 export function TaskPage() {
   const { tasks, createTask, updateTask, deleteTask, completeTask } = useTasks();
-  const { celebrate } = useGamification();
   const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<TaskFilterState>(DEFAULT_FILTERS);
@@ -55,11 +53,7 @@ export function TaskPage() {
     });
   }, [tasks, filters]);
 
-  const complete = (id: string) => {
-    const result = completeTask(id);
-    if (result) celebrate(result);
-    return result;
-  };
+  const complete = (id: string) => completeTask(id);
 
   function openNew() {
     setEditing(null);
