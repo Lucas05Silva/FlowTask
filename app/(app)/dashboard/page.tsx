@@ -7,7 +7,7 @@ import {
   ListChecks,
   CalendarClock,
   Wallet,
-  Flame,
+  Target,
   ArrowUpRight,
   ArrowDownRight,
   NotebookPen,
@@ -23,7 +23,6 @@ import { Badge } from "@/components/ui/Badge";
 import { ProgressBar } from "@/components/ui/ProgressBar";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { StatCard } from "@/components/dashboard/StatCard";
-import { Ranking } from "@/components/gamification/Ranking";
 import { CATEGORY_META, PRIORITY_META } from "@/lib/constants";
 import { currentMonthTotals, lastMonths } from "@/lib/finance-utils";
 import { calculateCurrentValue, estimateMonthlyPassiveIncome } from "@/lib/investment-calculator";
@@ -109,13 +108,7 @@ export default function DashboardPage() {
     [data.goals],
   );
 
-  const weddingDate = data.weddingDate || null;
-  const weddingDays = weddingDate ? daysUntil(weddingDate) : null;
-
-  const weddingTasks = data.weddingTasks || [];
-  const wedTotal = weddingTasks.length;
-  const wedCompleted = weddingTasks.filter((t) => t.status === "concluida").length;
-  const wedPercentage = wedTotal > 0 ? Math.round((wedCompleted / wedTotal) * 100) : 0;
+  const activeGoalsCount = data.goals.filter((g) => g.status === "em_andamento").length;
 
   const patrimony = useMemo(() => {
     if (!user) return { total: 0, passive: 0, hasAny: false, spark: [] as number[] };
@@ -199,28 +192,6 @@ export default function DashboardPage() {
         </p>
       </motion.div>
 
-      {/* Wedding Countdown Banner */}
-      {weddingDays !== null && (
-        <motion.div
-          variants={item}
-          className="rounded-card border border-pink-100/20 bg-gradient-to-r from-pink-500/10 via-pink-400/5 to-purple-500/10 p-4 text-xs sm:text-sm font-bold text-pink-600 dark:text-pink-400 flex items-center justify-between shadow-soft"
-        >
-          <span className="flex items-center gap-2">
-            <span className="animate-pulse">💍</span>{" "}
-            {weddingDays === 0
-              ? "É HOJE! O Grande Dia chegou! 💒💕"
-              : weddingDays === 1
-              ? "É AMANHÃ! O grande dia está chegando! 💒💍"
-              : weddingDays < 0
-              ? `Casados há ${Math.abs(weddingDays)} dias! 💕`
-              : `Faltam ${weddingDays} dias para o grande dia de Lucas & Thaiane! 💒✨`}
-          </span>
-          <Link href="/casamento" className="text-xs hover:underline text-pink-500 shrink-0 font-extrabold">
-            Acompanhar Painel →
-          </Link>
-        </motion.div>
-      )}
-
       {/* Summary cards */}
       <motion.div variants={item} className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
@@ -245,10 +216,10 @@ export default function DashboardPage() {
           accent={finance.balance >= 0 ? "var(--success)" : "var(--danger)"}
         />
         <StatCard
-          icon={Flame}
-          label="Seu streak"
-          value={`${user.streakCount} dias`}
-          hint="Conclua 1 tarefa hoje p/ manter 🔥"
+          icon={Target}
+          label="Metas ativas"
+          value={`${activeGoalsCount}`}
+          hint={activeGoalsCount ? "Seguindo firme 🎯" : "Nenhuma em andamento"}
           accent="var(--prio-alta)"
         />
       </motion.div>
@@ -371,39 +342,30 @@ export default function DashboardPage() {
         )}
       </motion.div>
 
-      {/* Hoje + Ranking */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <motion.div variants={item} className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>Hoje</CardTitle>
-              <Link href="/tarefas" className="text-sm font-medium text-brand hover:underline">
-                Ver tudo
-              </Link>
-            </CardHeader>
-            {todayTasks.length === 0 ? (
-              <EmptyState icon={ListChecks} title="Agenda livre por hoje!" description="Aproveite ou adiante algo da semana 😉" />
-            ) : (
-              <ul className="space-y-2">
-                {todayTasks.map((t) => (
-                  <li key={t.id} className="flex items-center gap-3 rounded-input border border-line p-3">
-                    <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_META[t.category].color }} />
-                    <span className="flex-1 truncate text-sm font-medium text-content">{t.title}</span>
-                    <Badge color={PRIORITY_META[t.priority].color}>{PRIORITY_META[t.priority].label}</Badge>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
-        </motion.div>
-
-        <motion.div variants={item}>
-          <Card className="h-full">
-            <CardTitle className="mb-4">Ranking</CardTitle>
-            <Ranking variant="full" />
-          </Card>
-        </motion.div>
-      </div>
+      {/* Hoje */}
+      <motion.div variants={item}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Hoje</CardTitle>
+            <Link href="/tarefas" className="text-sm font-medium text-brand hover:underline">
+              Ver tudo
+            </Link>
+          </CardHeader>
+          {todayTasks.length === 0 ? (
+            <EmptyState icon={ListChecks} title="Agenda livre por hoje!" description="Aproveite ou adiante algo da semana 😉" />
+          ) : (
+            <ul className="space-y-2">
+              {todayTasks.map((t) => (
+                <li key={t.id} className="flex items-center gap-3 rounded-input border border-line p-3">
+                  <span className="size-2.5 shrink-0 rounded-full" style={{ backgroundColor: CATEGORY_META[t.category].color }} />
+                  <span className="flex-1 truncate text-sm font-medium text-content">{t.title}</span>
+                  <Badge color={PRIORITY_META[t.priority].color}>{PRIORITY_META[t.priority].label}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      </motion.div>
 
       {/* Próximos 7 dias + Metas */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -453,19 +415,6 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Casamento 💍</CardTitle>
-              <Link href="/casamento" className="text-sm font-medium text-pink-500 hover:underline">Ver</Link>
-            </CardHeader>
-            <div className="space-y-2">
-              <div className="flex items-center justify-between text-xs font-semibold">
-                <span className="text-muted">{wedCompleted} de {wedTotal} tarefas</span>
-                <span className="font-bold text-pink-500">{wedPercentage}% concluído</span>
-              </div>
-              <ProgressBar value={wedPercentage} />
-            </div>
-          </Card>
         </motion.div>
       </div>
 

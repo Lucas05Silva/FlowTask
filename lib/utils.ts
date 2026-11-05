@@ -1,3 +1,5 @@
+import type { RecurrenceRule } from "@/types";
+
 /** Lightweight className combiner (truthy join). */
 export function cn(...inputs: Array<string | false | null | undefined>): string {
   return inputs.filter(Boolean).join(" ");
@@ -76,4 +78,27 @@ export function clamp(n: number, min: number, max: number): number {
 export function pct(part: number, whole: number): number {
   if (whole <= 0) return 0;
   return clamp(Math.round((part / whole) * 100), 0, 100);
+}
+
+/** Next due date (yyyy-mm-dd) for a recurring task after completion. */
+export function nextRecurrence(
+  dateISO: string | null,
+  rule: RecurrenceRule | null,
+): string | null {
+  const base = dateISO ? new Date(dateISO) : new Date();
+  switch (rule) {
+    case "diaria":
+      base.setDate(base.getDate() + 1);
+      break;
+    case "mensal":
+      base.setMonth(base.getMonth() + 1);
+      break;
+    case "semanal":
+    case "personalizada":
+    default:
+      base.setDate(base.getDate() + 7);
+      break;
+  }
+  const tz = base.getTimezoneOffset() * 60000;
+  return new Date(base.getTime() - tz).toISOString().slice(0, 10);
 }

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { DollarSign, Briefcase, User, Home, Heart, Calendar, Trophy, CheckSquare, Plus, Edit3, ArrowRight } from "lucide-react";
+import { DollarSign, Briefcase, User, Home, Heart, Calendar, CheckSquare, Plus, Edit3, ArrowRight } from "lucide-react";
 import type { Goal } from "@/types";
 import { useData } from "@/hooks/useData";
 import { Card } from "@/components/ui/Card";
@@ -20,7 +20,6 @@ interface GoalCardProps {
   onUpdateProgress: (id: string, value: number) => any;
   onToggleCheckItem: (goalId: string, itemId: string) => any;
   onComplete: (id: string) => any;
-  onCelebrate: (result: any) => void;
 }
 
 const TYPE_META: Record<string, { label: string; color: string; icon: any }> = {
@@ -37,7 +36,6 @@ export function GoalCard({
   onUpdateProgress,
   onToggleCheckItem,
   onComplete,
-  onCelebrate,
 }: GoalCardProps) {
   const router = useRouter();
   const data = useData();
@@ -75,18 +73,12 @@ export function GoalCard({
       alert("Por favor, insira um número válido maior ou igual a zero.");
       return;
     }
-    const res = onUpdateProgress(goal.id, parsed);
-    if (res) {
-      onCelebrate(res);
-    }
+    onUpdateProgress(goal.id, parsed);
   }
 
   function handleToggleCheckbox(e: React.MouseEvent, itemId: string) {
     e.stopPropagation();
-    const res = onToggleCheckItem(goal.id, itemId);
-    if (res) {
-      onCelebrate(res);
-    }
+    onToggleCheckItem(goal.id, itemId);
   }
 
   function handleEditClick(e: React.MouseEvent) {
@@ -156,12 +148,7 @@ export function GoalCard({
         <GoalProgress current={goal.currentAmount} target={goal.targetAmount} color={meta.color} size="md" />
       </div>
 
-      {/* Rewards details */}
-      <div className="mt-3.5 flex items-center justify-between text-xs border-t border-line/45 pt-3 font-semibold">
-        <span className="inline-flex items-center gap-1 text-muted">
-          <Trophy className="size-3.5 text-amber-500" /> Recompensa:
-          <span className="text-brand">+{goal.xpReward} XP</span>
-        </span>
+      <div className="mt-3.5 flex items-center justify-end text-xs border-t border-line/45 pt-3 font-semibold">
 
         <span className="text-[11px] text-muted font-medium">
           {expanded ? "Clique para encolher ▲" : "Clique para gerenciar ▼"}
@@ -302,8 +289,7 @@ export function GoalCard({
               variant="outline"
               size="sm"
               onClick={() => {
-                const res = onComplete(goal.id);
-                if (res) onCelebrate(res);
+                onComplete(goal.id);
                 setExpanded(false);
               }}
               className="w-full justify-center border-brand/25 text-brand hover:bg-brand/5 mt-2 h-9 text-xs"

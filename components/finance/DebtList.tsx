@@ -16,7 +16,6 @@ interface DebtListProps {
   onEditClick: (debt: Debt) => void;
   onPayInstallment: (id: string) => any;
   onDeleteClick: (id: string) => void;
-  onCelebrate: (result: any) => void;
 }
 
 export function DebtList({
@@ -25,7 +24,6 @@ export function DebtList({
   onEditClick,
   onPayInstallment,
   onDeleteClick,
-  onCelebrate,
 }: DebtListProps) {
   const [showPaidDebts, setShowPaidDebts] = useState(false);
 
@@ -61,10 +59,7 @@ export function DebtList({
 
   function handleQuickPay(e: React.MouseEvent, debt: Debt) {
     e.stopPropagation();
-    const res = onPayInstallment(debt.id);
-    if (res) {
-      onCelebrate(res);
-    }
+    onPayInstallment(debt.id);
   }
 
   return (

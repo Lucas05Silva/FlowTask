@@ -17,7 +17,6 @@ interface DebtModalProps {
   onUpdate: (id: string, form: any) => void;
   onPayInstallment: (id: string) => any;
   onDelete: (id: string) => void;
-  onCelebrate: (result: any) => void;
 }
 
 function emptyForm(): any {
@@ -54,7 +53,6 @@ export function DebtModal({
   onUpdate,
   onPayInstallment,
   onDelete,
-  onCelebrate,
 }: DebtModalProps) {
   const [form, setForm] = useState<any>(emptyForm());
   const [error, setError] = useState<string | null>(null);
@@ -101,10 +99,7 @@ export function DebtModal({
 
   function handlePayInstallment() {
     if (!debt) return;
-    const res = onPayInstallment(debt.id);
-    if (res) {
-      onCelebrate(res);
-    }
+    onPayInstallment(debt.id);
     onClose();
   }
 

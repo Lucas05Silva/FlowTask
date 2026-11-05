@@ -213,7 +213,7 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
           >
             <option value="">Nenhum</option>
             <option value="apartamento">Apartamento</option>
-            <option value="casamento">Casamento</option>
+            {goal?.linkedModule === "casamento" && <option value="casamento">Casamento</option>}
           </Select>
         </div>
 

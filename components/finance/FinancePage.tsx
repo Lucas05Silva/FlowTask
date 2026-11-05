@@ -5,7 +5,6 @@ import { Wallet, ListPlus, TrendingUp } from "lucide-react";
 import { useFinance } from "@/hooks/useFinance";
 import { useIncomeProfile } from "@/hooks/useIncomeProfile";
 import { useMonthlyExpenses } from "@/hooks/useMonthlyExpenses";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { FinanceOverview } from "./FinanceOverview";
@@ -26,7 +25,6 @@ import type { OwnerFilter } from "@/lib/finance-filter";
 type TabKey = "overview" | "incomes" | "expenses" | "debts" | "goals" | "suggestions" | "personal" | "minharenda";
 
 export function FinancePage() {
-  const { celebrate } = useGamification();
   const {
     finances,
     debts,
@@ -119,10 +117,7 @@ export function FinancePage() {
   };
 
   const handleCreateFinance = (form: any) => {
-    const res = createEntry(form);
-    if (res) {
-      celebrate(res);
-    }
+    createEntry(form);
   };
 
   // Handlers for debts
@@ -271,7 +266,6 @@ export function FinancePage() {
             onEditClick={handleEditDebt}
             onPayInstallment={payDebtInstallment}
             onDeleteClick={deleteDebt}
-            onCelebrate={(res) => celebrate(res, { big: true })}
           />
         )}
         {activeTab === "goals" && (
@@ -281,7 +275,6 @@ export function FinancePage() {
             onEditClick={handleEditGoal}
             onDeposit={depositToGoal}
             onDeleteClick={deleteGoal}
-            onCelebrate={(res) => celebrate(res, { big: true })}
           />
         )}
         {activeTab === "suggestions" && (
@@ -315,7 +308,6 @@ export function FinancePage() {
         onUpdate={updateDebt}
         onPayInstallment={payDebtInstallment}
         onDelete={deleteDebt}
-        onCelebrate={(res) => celebrate(res, { big: true })}
       />
 
       <GoalModal

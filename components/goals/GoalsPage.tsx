@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { Target, Search, Plus, Trophy } from "lucide-react";
 import { useGoals } from "@/hooks/useGoals";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Input, Select } from "@/components/ui/Input";
@@ -16,11 +15,10 @@ import { daysUntil, pct } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 
 type FilterType = "todas" | "financeira" | "projeto" | "pessoal" | "apartamento" | "casamento";
-type SortOption = "prazo" | "progresso" | "xp";
+type SortOption = "prazo" | "progresso";
 type TabOption = "active" | "completed";
 
 export function GoalsPage() {
-  const { celebrate } = useGamification();
   const {
     goals,
     createGoal,
@@ -45,7 +43,10 @@ export function GoalsPage() {
     { value: "projeto", label: "Projetos 💼" },
     { value: "pessoal", label: "Pessoais 👤" },
     { value: "apartamento", label: "Apartamento 🏠" },
-    { value: "casamento", label: "Casamento 💖" },
+    // Legacy type — only offered while old wedding goals still exist.
+    ...(goals.some((g) => g.type === "casamento")
+      ? [{ value: "casamento" as const, label: "Casamento 💖" }]
+      : []),
   ];
 
   // Logic: split goals by status (active vs completed)
@@ -68,9 +69,6 @@ export function GoalsPage() {
           const pctB = pct(b.currentAmount, b.targetAmount);
           return pctB - pctA; // Highest progress first
         }
-        if (selectedSort === "xp") {
-          return b.xpReward - a.xpReward; // Highest XP first
-        }
         return 0;
       });
   }, [activeGoals, selectedType, selectedSort, searchQuery]);
@@ -86,10 +84,7 @@ export function GoalsPage() {
   };
 
   const handleCreate = (form: any) => {
-    const res = createGoal(form);
-    if (res) {
-      celebrate(res, { big: true });
-    }
+    createGoal(form);
   };
 
   return (
@@ -170,7 +165,6 @@ export function GoalsPage() {
               >
                 <option value="prazo">Prazo (Próximo)</option>
                 <option value="progresso">Progresso (%)</option>
-                <option value="xp">XP Recompensa</option>
               </Select>
             </div>
           </Card>
@@ -225,7 +219,6 @@ export function GoalsPage() {
                   onUpdateProgress={updateProgress}
                   onToggleCheckItem={toggleCheckItem}
                   onComplete={completeGoal}
-                  onCelebrate={(res) => celebrate(res, { big: true })}
                 />
               ))}
             </div>

@@ -14,12 +14,10 @@ import type {
   CanadaNote,
   CanadaNoteCategory,
   Assignee,
-  FlowTaskData,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO, pct } from "@/lib/utils";
 import {
   DECISION_SEED,
@@ -78,32 +76,6 @@ export function useCanada() {
   const cities = data.canadaCities || [];
   const notes = data.canadaNotes || [];
 
-  /* ---- gamification helper (mirror of useInvestments.rewardUser) ---------- */
-  const rewardUser = useCallback(
-    (d: FlowTaskData, xpReward: number): { nextData: FlowTaskData; result: CelebrationResult | null } => {
-      if (!userId) return { nextData: d, result: null };
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-      const levelBefore = levelFromXp(me.xp).level;
-      me.xp += xpReward;
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-      return {
-        nextData: { ...d, users },
-        result: {
-          xpGained: xpReward,
-          leveledUp: after.level > levelBefore,
-          newLevel: after.level,
-          newTitle: after.title,
-          achievements: [],
-          streakCount: me.streakCount,
-        },
-      };
-    },
-    [userId],
-  );
-
   /* ---- progress ------------------------------------------------------------ */
   const getProgress = useCallback((): CanadaProgress => {
     // "Logística" counts only the travel-prep phases — the Estudos/LinkedIn
@@ -136,27 +108,17 @@ export function useCanada() {
 
   /* ---- decisions ------------------------------------------------------------ */
   const answerDecision = useCallback(
-    (id: string, answer: string): CelebrationResult | null => {
-      let celebration: CelebrationResult | null = null;
+    (id: string, answer: string) => {
       updateData((d) => {
-        const target = d.canadaDecisions.find((x) => x.id === id);
-        const wasDecided = target?.status === "decidido";
         const nextDecisions = d.canadaDecisions.map((x) =>
           x.id === id
             ? { ...x, answer: answer.trim(), status: "decidido" as const, decidedAt: new Date().toISOString() }
             : x,
         );
-        let next: FlowTaskData = { ...d, canadaDecisions: nextDecisions };
-        if (!wasDecided) {
-          const { nextData, result } = rewardUser(next, XP.canadaStep);
-          celebration = result;
-          next = nextData;
-        }
-        return next;
+        return { ...d, canadaDecisions: nextDecisions };
       });
-      return celebration;
     },
-    [rewardUser],
+    [],
   );
 
   const setDecisionStatus = useCallback((id: string, status: CanadaDecision["status"]) => {
@@ -189,28 +151,18 @@ export function useCanada() {
   );
 
   const setDocumentStatus = useCallback(
-    (id: string, status: CanadaDocumentStatus): CelebrationResult | null => {
-      let celebration: CelebrationResult | null = null;
+    (id: string, status: CanadaDocumentStatus) => {
       updateData((d) => {
-        const target = d.canadaDocuments.find((x) => x.id === id);
-        const wasDone = target?.status === "concluido" || target?.status === "nao_aplicavel";
         const willBeDone = status === "concluido" || status === "nao_aplicavel";
         const nextDocuments = d.canadaDocuments.map((x) =>
           x.id === id
             ? { ...x, status, completedAt: willBeDone ? x.completedAt || new Date().toISOString() : null }
             : x,
         );
-        let next: FlowTaskData = { ...d, canadaDocuments: nextDocuments };
-        if (!wasDone && willBeDone) {
-          const { nextData, result } = rewardUser(next, XP.canadaStep);
-          celebration = result;
-          next = nextData;
-        }
-        return next;
+        return { ...d, canadaDocuments: nextDocuments };
       });
-      return celebration;
     },
-    [rewardUser],
+    [],
   );
 
   const deleteDocument = useCallback((id: string) => {
@@ -237,8 +189,7 @@ export function useCanada() {
   }, []);
 
   const toggleChecklistItem = useCallback(
-    (id: string): CelebrationResult | null => {
-      let celebration: CelebrationResult | null = null;
+    (id: string) => {
       updateData((d) => {
         const target = d.canadaChecklist.find((x) => x.id === id);
         if (!target) return d;
@@ -252,17 +203,10 @@ export function useCanada() {
               }
             : x,
         );
-        let next: FlowTaskData = { ...d, canadaChecklist: nextChecklist };
-        if (willBeDone) {
-          const { nextData, result } = rewardUser(next, XP.canadaStep);
-          celebration = result;
-          next = nextData;
-        }
-        return next;
+        return { ...d, canadaChecklist: nextChecklist };
       });
-      return celebration;
     },
-    [rewardUser],
+    [],
   );
 
   const deleteChecklistItem = useCallback((id: string) => {
@@ -313,16 +257,12 @@ export function useCanada() {
     }));
   }, []);
 
-  const chooseCity = useCallback((id: string): CelebrationResult | null => {
-    let celebration: CelebrationResult | null = null;
+  const chooseCity = useCallback((id: string) => {
     updateData((d) => {
       const nextCities = d.canadaCities.map((c) => ({ ...c, isChosen: c.id === id }));
-      const { nextData, result } = rewardUser({ ...d, canadaCities: nextCities }, XP.canadaStep);
-      celebration = result;
-      return nextData;
+      return { ...d, canadaCities: nextCities };
     });
-    return celebration;
-  }, [rewardUser]);
+  }, []);
 
   const deleteCity = useCallback((id: string) => {
     updateData((d) => ({ ...d, canadaCities: d.canadaCities.filter((c) => c.id !== id) }));

@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { MoreHorizontal, X } from "lucide-react";
 import { PRIMARY_MOBILE_ITEMS, DRAWER_ITEMS } from "@/lib/nav";
-import { Ranking } from "@/components/gamification/Ranking";
 import { cn } from "@/lib/utils";
 
 export function MobileNav() {
@@ -90,9 +89,6 @@ export function MobileNav() {
                     </Link>
                   );
                 })}
-              </div>
-              <div className="mt-5 rounded-card border border-line p-4">
-                <Ranking variant="sidebar" />
               </div>
             </motion.div>
           </motion.div>

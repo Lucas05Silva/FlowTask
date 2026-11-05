@@ -4,14 +4,13 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 
 import { useEffect, useState } from "react";
-import { Star, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import type { Assignee, Project, ProjectStatus, ServiceType } from "@/types";
 import type { ProjectFormData } from "@/hooks/useProjects";
 import { Button } from "@/components/ui/Button";
 import { Input, Label, Select, Textarea } from "@/components/ui/Input";
 import { Modal } from "@/components/ui/Modal";
 import { ASSIGNEE_META, PROJECT_STATUS_META, SERVICE_TYPE_META } from "@/lib/constants";
-import { XP } from "@/lib/gamification";
 import { todayISO } from "@/lib/utils";
 import { ProjectSteps } from "./ProjectSteps";
 import { ASSIGNEES, PROJECT_STATUS_ORDER, SERVICE_TYPES } from "./project-utils";
@@ -98,10 +97,7 @@ export function ProjectModal({ open, project, onClose, onCreate, onUpdate, onDel
       title={isEdit ? "Editar projeto" : "Novo projeto"}
       className="sm:max-w-2xl"
       footer={
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <span className="inline-flex items-center gap-1.5 text-sm font-medium text-brand">
-            <Star className="size-4" /> +{XP.projectComplete} XP ao concluir
-          </span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end">
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={onClose}>Cancelar</Button>
             <Button onClick={handleSave}>Salvar</Button>

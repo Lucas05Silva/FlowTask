@@ -7,7 +7,6 @@ import { Card, CardTitle } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Input";
 import { useMonthlyExpenses, daysUntilDueDay } from "@/hooks/useMonthlyExpenses";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { ExpenseModal } from "./ExpenseModal";
 import { EXPENSE_CATEGORY_META } from "./expenseMeta";
@@ -39,7 +38,6 @@ export function ExpensesPanel({ availableIncome }: ExpensesPanelProps) {
     removeExpense,
     advanceInstallment,
   } = useMonthlyExpenses();
-  const { celebrate } = useGamification();
   const { toast } = useToast();
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -92,13 +90,11 @@ export function ExpensesPanel({ availableIncome }: ExpensesPanelProps) {
     setModalOpen(true);
   };
   const handleCreate = (form: Parameters<typeof addExpense>[0]) => {
-    const res = addExpense(form);
-    if (res) celebrate(res);
+    addExpense(form);
   };
   const handleAdvance = (e: MonthlyExpense) => {
-    const { celebration, quitadoName } = advanceInstallment(e.id);
+    const { quitadoName } = advanceInstallment(e.id);
     if (quitadoName) toast({ variant: "success", title: `🎉 ${quitadoName} quitado!`, description: "Dívida parcelada concluída." });
-    if (celebration) celebrate(celebration, { big: true });
   };
 
   return (

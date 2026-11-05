@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import type { Investment } from "@/types";
 import { useInvestments } from "@/hooks/useInvestments";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { useToast } from "@/components/providers/ToastProvider";
 import { useAuth } from "@/components/providers/AuthProvider";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -34,7 +33,6 @@ const DISCLAIMER =
 
 export function InvestmentsPage() {
   const { user } = useAuth();
-  const { celebrate } = useGamification();
   const { toast } = useToast();
   const {
     investments,
@@ -154,13 +152,11 @@ export function InvestmentsPage() {
   };
 
   const handleCreate = (form: Parameters<typeof createInvestment>[0]) => {
-    const res = createInvestment(form);
-    if (res) celebrate(res, { big: !!res.completedGoal });
+    createInvestment(form);
   };
   const handleContribution = (investmentId: string, form: Parameters<typeof addContribution>[1]) => {
     const inv = investments.find((i) => i.id === investmentId);
-    const res = addContribution(investmentId, form);
-    if (res) celebrate(res, { big: !!res.completedGoal });
+    addContribution(investmentId, form);
 
     // Confirmation toast with the investment name.
     toast({

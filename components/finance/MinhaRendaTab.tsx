@@ -20,7 +20,6 @@ import type { IncomeSource } from "@/types";
 import { useIncomeProfile } from "@/hooks/useIncomeProfile";
 import { useInvestments } from "@/hooks/useInvestments";
 import { useMonthlyExpenses } from "@/hooks/useMonthlyExpenses";
-import { useGamification } from "@/components/providers/GamificationProvider";
 import { Card, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -53,7 +52,6 @@ function futureDateLabel(monthsAhead: number): string {
 }
 
 export function MinhaRendaTab() {
-  const { celebrate } = useGamification();
   const {
     history,
     sources,
@@ -134,8 +132,7 @@ export function MinhaRendaTab() {
   };
 
   const handleSave = (form: typeof initialForm) => {
-    const res = saveProfile(form);
-    if (res) celebrate(res);
+    saveProfile(form);
   };
 
   const kpis = [

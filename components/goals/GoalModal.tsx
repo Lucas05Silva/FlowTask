@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Trash2, HelpCircle, ArrowRight, AlertCircle, Trophy } from "lucide-react";
+import { Plus, Trash2, ArrowRight, AlertCircle } from "lucide-react";
 import type { Goal, GoalType, GoalCheckItem, GoalContributionType } from "@/types";
 import { Modal } from "@/components/ui/Modal";
 import { Input, Label, Textarea, Select } from "@/components/ui/Input";
@@ -17,14 +17,6 @@ interface GoalModalProps {
   onUpdate: (id: string, patch: any) => void;
   onDelete: (id: string) => void;
 }
-
-const DEFAULT_XP_MAP: Record<GoalType, number> = {
-  projeto: 100,
-  pessoal: 50,
-  apartamento: 80,
-  casamento: 60,
-  financeira: 150,
-};
 
 export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }: GoalModalProps) {
   const router = useRouter();
@@ -45,7 +37,6 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
   const [newCheckItemText, setNewCheckItemText] = useState("");
 
   const [deadline, setDeadline] = useState("");
-  const [xpReward, setXpReward] = useState<number>(50);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -65,7 +56,6 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
         setUnit(goal.unit || "");
         setChecklist(goal.checklist || []);
         setDeadline(goal.deadline ? goal.deadline.slice(0, 10) : "");
-        setXpReward(goal.xpReward);
         setContributionType(goal.contributionType || "count");
         setContributionValuePerTask(goal.contributionValuePerTask || 1);
       } else {
@@ -79,19 +69,11 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
         setChecklist([]);
         setNewCheckItemText("");
         setDeadline("");
-        setXpReward(DEFAULT_XP_MAP.pessoal);
         setContributionType("count");
         setContributionValuePerTask(1);
       }
     }
   }, [goal, open]);
-
-  // Suggest XP rewards when type changes
-  useEffect(() => {
-    if (!goal) {
-      setXpReward(DEFAULT_XP_MAP[type] || 50);
-    }
-  }, [type, goal]);
 
   const handleAddCheckItem = () => {
     if (!newCheckItemText.trim()) return;
@@ -122,7 +104,6 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
       description: description.trim(),
       type,
       deadline: deadline || null,
-      xpReward,
       category: null,
       linkedModule: type !== "pessoal" ? type : null,
       contributionType: progressMode === "checklist" ? "checklist" : contributionType,
@@ -165,10 +146,7 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
       onClose={onClose}
       title={goal ? "Editar meta" : "Nova meta"}
       footer={
-        <div className="flex w-full items-center justify-between gap-3">
-          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand">
-            <Trophy className="size-3.5 text-amber-500" /> +{xpReward} XP ao atingir
-          </span>
+        <div className="flex w-full items-center justify-end gap-3">
           <div className="flex gap-2">
             <Button variant="ghost" onClick={onClose}>
               Cancelar
@@ -215,7 +193,7 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
               <option value="pessoal">Pessoal</option>
               <option value="projeto">Projeto</option>
               <option value="apartamento">Apartamento</option>
-              <option value="casamento">Casamento</option>
+              {goal?.type === "casamento" && <option value="casamento">Casamento</option>}
               <option value="financeira">Financeira 💰</option>
             </Select>
           </div>
@@ -394,24 +372,6 @@ export function GoalModal({ open, goal, onClose, onCreate, onUpdate, onDelete }:
               </div>
             )}
 
-            {/* XP reward */}
-            <div>
-              <Label htmlFor="g-xp">Recompensa de Experiência (XP)</Label>
-              <div className="flex items-center gap-2">
-                <Input
-                  id="g-xp"
-                  type="number"
-                  min={10}
-                  max={1000}
-                  value={xpReward}
-                  onChange={(e) => setXpReward(parseInt(e.target.value, 10) || 10)}
-                  className="w-28 text-center font-bold text-brand"
-                />
-                <span className="text-xs text-muted font-medium flex items-center gap-1">
-                  <HelpCircle className="size-3.5 text-muted" /> XP ganho ao atingir 100% da meta.
-                </span>
-              </div>
-            </div>
           </>
         )}
 

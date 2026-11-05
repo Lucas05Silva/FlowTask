@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import type {
   FinanceEntry,
   Debt,
@@ -9,14 +9,11 @@ import type {
   FinanceCategory,
   FinanceRecurrenceRule,
   FinancialGoalCategory,
-  Achievement,
-  FlowTaskData,
   Assignee,
 } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, XP, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO, daysUntil } from "@/lib/utils";
 import { matchesOwnerFilter, type OwnerFilter } from "@/lib/finance-filter";
 
@@ -59,99 +56,15 @@ export function useFinance() {
   const { user } = useAuth();
   const userId = user?.id ?? null;
 
-  // Virtual wedding expense entries mapping actual costs
-  const allFinances = useMemo(() => {
-    const list = [...data.finances];
-    const budgetList = data.weddingBudget || [];
-    budgetList.forEach((b) => {
-      if (b.actualCost > 0) {
-        list.push({
-          id: `virtual-wedding-${b.id}`,
-          type: "expense",
-          amount: b.actualCost,
-          description: `Casamento: ${b.category}`,
-          date: todayISO(),
-          category: "casamento",
-          tags: ["casamento"],
-          isRecurring: false,
-          recurrenceRule: null,
-          createdBy: userId || "lucas",
-          createdAt: new Date().toISOString(),
-        });
-      }
-    });
-    return list;
-  }, [data.finances, data.weddingBudget, userId]);
-
-  // Helper to apply XP reward and check achievements manually
-  const rewardUser = useCallback(
-    (d: FlowTaskData, xpReward: number, manualAchievementId?: string): { nextData: FlowTaskData; result: CelebrationResult | null } => {
-      if (!userId) return { nextData: d, result: null };
-
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-
-      const xpBefore = me.xp;
-      const levelBefore = levelFromXp(xpBefore).level;
-      let totalXpGained = xpReward;
-
-      me.xp += xpReward;
-
-      let userAchievements = d.userAchievements;
-      const unlocked: Achievement[] = [];
-
-      if (manualAchievementId) {
-        const alreadyHas = userAchievements.some(
-          (ua) => ua.userId === userId && ua.achievementId === manualAchievementId
-        );
-        if (!alreadyHas) {
-          const ach = d.achievements.find((a) => a.id === manualAchievementId);
-          if (ach) {
-            userAchievements = [
-              ...userAchievements,
-              {
-                id: uid("ua"),
-                userId,
-                achievementId: manualAchievementId,
-                unlockedAt: new Date().toISOString(),
-              },
-            ];
-            me.xp += ach.xpReward;
-            totalXpGained += ach.xpReward;
-            unlocked.push(ach);
-          }
-        }
-      }
-
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-
-      const result: CelebrationResult = {
-        xpGained: totalXpGained,
-        leveledUp: after.level > levelBefore,
-        newLevel: after.level,
-        newTitle: after.title,
-        achievements: unlocked,
-        streakCount: me.streakCount,
-      };
-
-      return {
-        nextData: { ...d, users, userAchievements },
-        result,
-      };
-    },
-    [userId]
-  );
+  const allFinances = data.finances;
 
   // ----------------------------------------------------
   // FINANCE ENTRIES (INCOME / EXPENSE) CRUD
   // ----------------------------------------------------
 
   const createEntry = useCallback(
-    (form: EntryFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (form: EntryFormData) => {
+      if (!userId) return;
 
       updateData((d) => {
         const newEntry: FinanceEntry = {
@@ -172,14 +85,10 @@ export function useFinance() {
         };
 
         const withEntry = { ...d, finances: [...d.finances, newEntry] };
-        const { nextData, result } = rewardUser(withEntry, XP.financeEntry);
-        celebration = result;
-        return nextData;
+        return withEntry;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   const updateEntry = useCallback(
@@ -262,9 +171,8 @@ export function useFinance() {
   }, []);
 
   const payDebtInstallment = useCallback(
-    (id: string): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (id: string) => {
+      if (!userId) return;
 
       updateData((d) => {
         const debt = d.debts.find((db) => db.id === id);
@@ -308,21 +216,10 @@ export function useFinance() {
           finances: [...d.finances, paymentExpense],
         };
 
-        if (isPaidNow) {
-          const { nextData, result } = rewardUser(withPayment, XP.debtPaid, "ach_debt_zero");
-          celebration = result;
-          return nextData;
-        } else {
-          // Just standard entry XP (5 XP) for register expense
-          const { nextData, result } = rewardUser(withPayment, XP.financeEntry);
-          celebration = result;
-          return nextData;
-        }
+        return withPayment;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   // ----------------------------------------------------
@@ -344,7 +241,6 @@ export function useFinance() {
           deadline: form.deadline,
           category: form.category,
           linkedModule: form.linkedModule,
-          xpReward: XP.financialGoal,
           status: isDone ? "concluida" : "em_andamento",
           createdBy: userId,
           createdAt: new Date().toISOString(),
@@ -383,9 +279,8 @@ export function useFinance() {
   }, []);
 
   const depositToGoal = useCallback(
-    (id: string, amount: number): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (id: string, amount: number) => {
+      if (!userId) return;
 
       updateData((d) => {
         const goal = d.goals.find((g) => g.id === id);
@@ -426,21 +321,10 @@ export function useFinance() {
           finances: [...d.finances, depositExpense],
         };
 
-        if (isDoneNow) {
-          const { nextData, result } = rewardUser(withDeposit, XP.financialGoal, "ach_saver");
-          celebration = result;
-          return nextData;
-        } else {
-          // Just standard entry XP (5 XP) for expense register
-          const { nextData, result } = rewardUser(withDeposit, XP.financeEntry);
-          celebration = result;
-          return nextData;
-        }
+        return withDeposit;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   // ----------------------------------------------------

@@ -5,7 +5,6 @@ import type { Assignee, Project, ProjectStatus, ProjectStep, ServiceType } from 
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { XP, applyReward, type CelebrationResult } from "@/lib/gamification";
 import { uid } from "@/lib/utils";
 
 export interface ProjectFormData {
@@ -57,10 +56,10 @@ export function useProjects() {
     updateData((d) => ({ ...d, projects: d.projects.filter((p) => p.id !== id) }));
   }, []);
 
-  /** Toggle a step. Completing (pendente→concluido) awards +30 XP. */
+  /** Toggle a step. Returns allDone=true when this completion finished every step of an open project. */
   const toggleStep = useCallback(
-    (projectId: string, stepId: string): { result: CelebrationResult | null; allDone: boolean } => {
-      let out: { result: CelebrationResult | null; allDone: boolean } = { result: null, allDone: false };
+    (projectId: string, stepId: string): { completed: boolean; allDone: boolean } => {
+      let out = { completed: false, allDone: false };
       if (!userId) return out;
 
       updateData((d) => {
@@ -78,12 +77,7 @@ export function useProjects() {
         const projects = d.projects.map((p) => (p.id === projectId ? { ...p, steps } : p));
         const allDone = steps.length > 0 && steps.every((s) => s.status === "concluido");
 
-        if (completing) {
-          const { data: rewarded, result } = applyReward({ ...d, projects }, userId, XP.projectStep);
-          out = { result, allDone: allDone && project.status !== "feito" };
-          return rewarded;
-        }
-        out = { result: null, allDone: false };
+        out = { completed: completing, allDone: completing && allDone && project.status !== "feito" };
         return { ...d, projects };
       });
 
@@ -92,33 +86,28 @@ export function useProjects() {
     [userId],
   );
 
-  /** Mark a project done: sets status/feito + completedAt, awards +200 XP. */
+  /** Mark a project done: sets status/feito + completedAt. */
   const completeProject = useCallback(
-    (id: string): CelebrationResult | null => {
-      if (!userId) return null;
-      let result: CelebrationResult | null = null;
+    (id: string) => {
+      if (!userId) return;
       updateData((d) => {
         const project = d.projects.find((p) => p.id === id);
         if (!project || project.status === "feito") return d;
         const now = new Date().toISOString();
         const projects = d.projects.map((p) => (p.id === id ? { ...p, status: "feito" as ProjectStatus, completedAt: now } : p));
-        const { data: rewarded, result: r } = applyReward({ ...d, projects }, userId, XP.projectComplete);
-        result = r;
-        return rewarded;
+        return { ...d, projects };
       });
-      return result;
     },
     [userId],
   );
 
   const setStatus = useCallback(
-    (id: string, status: ProjectStatus): CelebrationResult | null => {
+    (id: string, status: ProjectStatus) => {
       if (status === "feito") return completeProject(id);
       updateData((d) => ({
         ...d,
         projects: d.projects.map((p) => (p.id === id ? { ...p, status, completedAt: null } : p)),
       }));
-      return null;
     },
     [completeProject],
   );

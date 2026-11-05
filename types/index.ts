@@ -40,11 +40,6 @@ export interface User {
   name: string;
   avatarUrl: string | null;
   avatarEmoji: string | null;
-  xp: number;
-  level: number;
-  streakCount: number;
-  streakRecord: number;
-  streakLastDate: string | null;
   themePreference: ThemePreference;
   createdAt: string;
 }
@@ -71,7 +66,6 @@ export interface Task {
   goalId: ID | null;
   goalContributionType?: GoalContributionType;
   goalContributionValue?: number;
-  xpReward: number;
   order: number;
   createdBy: ID;
   createdAt: string;
@@ -189,62 +183,12 @@ export interface Goal {
   category: string | null;
   linkedModule: string | null;
   linkedId?: string | null;
-  xpReward: number;
   status: GoalStatus;
   createdBy: ID;
   createdAt: string;
   completedAt: string | null;
   contributionType?: GoalContributionType;
   contributionValuePerTask?: number;
-}
-
-export interface WeddingTask {
-  id: ID;
-  title: string;
-  description: string;
-  deadline: string | null;
-  assignee: Assignee;
-  status: TaskStatus;
-  category: string;
-  createdAt: string;
-  completedAt: string | null;
-}
-
-export type VendorStatus = "pesquisando" | "orcado" | "contratado" | "pago";
-
-export interface WeddingBudgetItem {
-  id: ID;
-  category: string;
-  estimatedCost: number;
-  actualCost: number;
-  notes: string;
-}
-
-export interface WeddingVendor {
-  id: ID;
-  name: string;
-  service: string;
-  contactPhone: string | null;
-  contactEmail: string | null;
-  quotedValue: number;
-  status: VendorStatus;
-  notes: string;
-}
-
-export interface Achievement {
-  id: ID;
-  key: string;
-  title: string;
-  description: string;
-  icon: string;
-  xpReward: number;
-}
-
-export interface UserAchievement {
-  id: ID;
-  userId: ID;
-  achievementId: ID;
-  unlockedAt: string;
 }
 
 /* --- Task Prompts (Cofre de Prompts, Fase 11) --- */
@@ -588,11 +532,6 @@ export interface FlowTaskData {
   finances: FinanceEntry[];
   debts: Debt[];
   goals: Goal[];
-  weddingTasks: WeddingTask[];
-  weddingBudget: WeddingBudgetItem[];
-  weddingVendors: WeddingVendor[];
-  achievements: Achievement[];
-  userAchievements: UserAchievement[];
   taskPrompts: TaskPrompt[];
   notes: Note[];
   investments: Investment[];
@@ -610,7 +549,4 @@ export interface FlowTaskData {
   monthlyPlanItems: MonthlyPlanItem[];
   financialIdeas: FinancialIdea[];
   dreams: Dream[];
-  weddingDate: string | null;
-  weddingVenueName?: string | null;
-  weddingVenueAddress?: string | null;
 }

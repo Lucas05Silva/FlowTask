@@ -1,11 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
-import type { Goal, GoalType, GoalCheckItem, GoalStatus, FlowTaskData, Achievement, GoalContributionType } from "@/types";
+import type { Goal, GoalType, GoalCheckItem, GoalStatus, GoalContributionType } from "@/types";
 import { updateData } from "@/lib/data/store";
 import { useData } from "@/hooks/useData";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { levelFromXp, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
 import { computeGoalProgressRecalculation } from "@/lib/goal-progress";
 
@@ -20,7 +19,6 @@ export interface GoalFormData {
   deadline: string | null;
   category: string | null;
   linkedModule: string | null;
-  xpReward: number;
   contributionType: GoalContributionType;
   contributionValuePerTask?: number;
 }
@@ -39,70 +37,9 @@ export function useGoals() {
     return g;
   });
 
-  const rewardUser = useCallback(
-    (d: FlowTaskData, xpReward: number, manualAchievementId?: string): { nextData: FlowTaskData; result: CelebrationResult | null } => {
-      if (!userId) return { nextData: d, result: null };
-
-      const users = d.users.map((u) => ({ ...u }));
-      const me = users.find((u) => u.id === userId);
-      if (!me) return { nextData: d, result: null };
-
-      const xpBefore = me.xp;
-      const levelBefore = levelFromXp(xpBefore).level;
-      let totalXpGained = xpReward;
-
-      me.xp += xpReward;
-
-      let userAchievements = d.userAchievements;
-      const unlocked: Achievement[] = [];
-
-      if (manualAchievementId) {
-        const alreadyHas = userAchievements.some(
-          (ua) => ua.userId === userId && ua.achievementId === manualAchievementId
-        );
-        if (!alreadyHas) {
-          const ach = d.achievements.find((a) => a.id === manualAchievementId);
-          if (ach) {
-            userAchievements = [
-              ...userAchievements,
-              {
-                id: uid("ua"),
-                userId,
-                achievementId: manualAchievementId,
-                unlockedAt: new Date().toISOString(),
-              },
-            ];
-            me.xp += ach.xpReward;
-            totalXpGained += ach.xpReward;
-            unlocked.push(ach);
-          }
-        }
-      }
-
-      const after = levelFromXp(me.xp);
-      me.level = after.level;
-
-      const result: CelebrationResult = {
-        xpGained: totalXpGained,
-        leveledUp: after.level > levelBefore,
-        newLevel: after.level,
-        newTitle: after.title,
-        achievements: unlocked,
-        streakCount: me.streakCount,
-      };
-
-      return {
-        nextData: { ...d, users, userAchievements },
-        result,
-      };
-    },
-    [userId]
-  );
-
   const createGoal = useCallback(
-    (form: GoalFormData): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (form: GoalFormData) => {
+      if (!userId) return;
 
       updateData((d) => {
         const isDone = form.currentAmount >= form.targetAmount;
@@ -118,7 +55,6 @@ export function useGoals() {
           deadline: form.deadline,
           category: form.category || null,
           linkedModule: form.linkedModule || null,
-          xpReward: form.xpReward,
           status: isDone ? "concluida" : "em_andamento",
           createdBy: userId,
           createdAt: new Date().toISOString(),
@@ -129,21 +65,10 @@ export function useGoals() {
 
         const withGoal = { ...d, goals: [...d.goals, newGoal] };
 
-        if (isDone) {
-          // If it was created as already completed, reward now
-          const isFinancial = form.type === "financeira";
-          const achievementId = isFinancial ? "ach_saver" : undefined;
-          const { nextData, result } = rewardUser(withGoal, form.xpReward, achievementId);
-          celebration = result;
-          return nextData;
-        }
-
         return withGoal;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   const updateGoal = useCallback((id: string, patch: Partial<Goal>) => {
@@ -170,9 +95,8 @@ export function useGoals() {
   }, []);
 
   const completeGoal = useCallback(
-    (id: string): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (id: string) => {
+      if (!userId) return;
 
       updateData((d) => {
         const goal = d.goals.find((g) => g.id === id);
@@ -190,23 +114,15 @@ export function useGoals() {
         );
 
         const withCompletion = { ...d, goals: updatedGoals };
-        const isFinancial = goal.type === "financeira";
-        const achievementId = isFinancial ? "ach_saver" : undefined;
-
-        const { nextData, result } = rewardUser(withCompletion, goal.xpReward, achievementId);
-        celebration = result;
-        return nextData;
+        return withCompletion;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   const updateProgress = useCallback(
-    (id: string, nextValue: number): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (id: string, nextValue: number) => {
+      if (!userId) return;
 
       updateData((d) => {
         const goal = d.goals.find((g) => g.id === id);
@@ -228,26 +144,15 @@ export function useGoals() {
 
         const withProgress = { ...d, goals: updatedGoals };
 
-        if (isDoneNow) {
-          const isFinancial = goal.type === "financeira";
-          const achievementId = isFinancial ? "ach_saver" : undefined;
-          const { nextData, result } = rewardUser(withProgress, goal.xpReward, achievementId);
-          celebration = result;
-          return nextData;
-        }
-
         return withProgress;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   const toggleCheckItem = useCallback(
-    (goalId: string, itemId: string): CelebrationResult | null => {
-      if (!userId) return null;
-      let celebration: CelebrationResult | null = null;
+    (goalId: string, itemId: string) => {
+      if (!userId) return;
 
       updateData((d) => {
         const goal = d.goals.find((g) => g.id === goalId);
@@ -276,20 +181,10 @@ export function useGoals() {
 
         const withToggle = { ...d, goals: updatedGoals };
 
-        if (isDoneNow) {
-          const isFinancial = goal.type === "financeira";
-          const achievementId = isFinancial ? "ach_saver" : undefined;
-          const { nextData, result } = rewardUser(withToggle, goal.xpReward, achievementId);
-          celebration = result;
-          return nextData;
-        }
-
         return withToggle;
       });
-
-      return celebration;
     },
-    [userId, rewardUser]
+    [userId]
   );
 
   const getGoalById = useCallback(

@@ -22,7 +22,6 @@ import { useAuth } from "@/components/providers/AuthProvider";
 import { useFinance } from "@/hooks/useFinance";
 import { useInvestments } from "@/hooks/useInvestments";
 import { KNOWN_USERS } from "@/lib/data/initialState";
-import { XP, taskXp, type CelebrationResult } from "@/lib/gamification";
 import { uid, todayISO } from "@/lib/utils";
 import {
   computeDistribution,
@@ -70,10 +69,9 @@ export interface ResolvedDream {
   projection: AmountProjection;
 }
 
-/** Result of marking an item as paid — the page turns it into toasts/confetti. */
+/** Result of marking an item as paid — the page turns it into a toast. */
 export interface PaidResult {
   message: string;
-  celebration: CelebrationResult | null;
 }
 
 const monthKey = (year: number, month: number) => `${year}-${String(month).padStart(2, "0")}`;
@@ -235,22 +233,21 @@ export function useOrganizacao(month: number, year: number) {
     (item: MonthlyPlanItem): PaidResult | null => {
       if (!userId) return null;
       const nowIso = new Date().toISOString();
-      let celebration: CelebrationResult | null = null;
       let message = `✅ ${item.name} marcado como pago na Organização`;
       let paidRecordId: string | null = null;
 
       if (item.linkedType === "debt" && item.linkedId) {
-        celebration = payDebtInstallment(item.linkedId);
+        payDebtInstallment(item.linkedId);
         message = `💳 Parcela de ${item.name} paga via Organização`;
       } else if (item.linkedType === "investment" && item.linkedId) {
-        celebration = addContribution(item.linkedId, {
+        addContribution(item.linkedId, {
           amount: item.plannedAmount, date: todayISO(), contributor: me ?? "ambos",
           notes: "Via Organização", registerAsExpense: false,
         });
         const inv = investments.find((i) => i.id === item.linkedId);
         message = `📈 Aporte no ${inv?.name ?? item.name} registrado via Organização`;
       } else if (item.linkedType === "financial_goal" && item.linkedId) {
-        celebration = depositToGoal(item.linkedId, item.plannedAmount);
+        depositToGoal(item.linkedId, item.plannedAmount);
         const goal = financialGoals.find((g) => g.id === item.linkedId);
         message = `🎯 Depósito na meta ${goal?.title ?? item.name} registrado — progresso atualizado`;
       } else if (item.category === "fixa" || item.category === "variavel" || item.category === "divida") {
@@ -274,7 +271,7 @@ export function useOrganizacao(month: number, year: number) {
             : i,
         ),
       }));
-      return { message, celebration };
+      return { message };
     },
     [userId, me, payDebtInstallment, addContribution, depositToGoal, investments, financialGoals],
   );
@@ -323,7 +320,7 @@ export function useOrganizacao(month: number, year: number) {
             id: uid("t"), title: form.title.trim(), description: idea.content, dueDate: form.date,
             priority: "media", category: "financeiro", status: "a_fazer", assignee: me ?? "ambos",
             subtasks: [], isRecurring: false, recurrenceRule: null, parentTaskId: null, goalId: null,
-            xpReward: taskXp("media"), order: d.tasks.reduce((m, t) => Math.max(m, t.order), 0) + 1,
+            order: d.tasks.reduce((m, t) => Math.max(m, t.order), 0) + 1,
             createdBy: userId, createdAt: nowIso, completedAt: null,
           };
           promotedId = task.id;
@@ -332,7 +329,7 @@ export function useOrganizacao(month: number, year: number) {
           const goal: Goal = {
             id: uid("g"), title: form.title.trim(), description: idea.content, type: "financeira",
             targetAmount: form.targetAmount, currentAmount: 0, deadline: form.date, category: "outros",
-            linkedModule: null, xpReward: XP.financialGoal, status: "em_andamento",
+            linkedModule: null, status: "em_andamento",
             createdBy: userId, createdAt: nowIso, completedAt: null,
           };
           promotedId = goal.id;
